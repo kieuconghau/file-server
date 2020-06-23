@@ -141,6 +141,38 @@ Trong đó:
 1. Cho phép nhiều Client cùng login với một username.
 
 
+## MSDN Winsock
+### Ngắt kết nối hợp lệ
+Để ngắt kết nối hợp lệ giữa A và B đang liên lạc trên đường truyền, phải trải qua 4 bước (A là Client, B là Server, hoặc ngược lại):
+	
+1. Bước 1:
+	- A không còn gì để send cho B nữa nên chủ động ngắt kết nối trước.  
+	--> Bên A gọi hàm `shutdown(A)`.
+	
+	- Sau khi A shutdown, B sẽ ngay lập tức receive và hàm `rcv(...)` bên B trả về giá trị 0.  
+	--> Dấu hiệu nhận biết A đã ngỏ lời ngắt kết nối với B.
+
+	- Lưu ý: lúc này A vẫn có thể receive từ B.
+
+2. Bước 2:
+	- Cho đến khi B không còn gì để send cho A nữa thì B cũng ngắt kết nối với A.  
+	--> Bên B gọi hàm `shutdown(B)`.
+
+	- Sau khi B shutdown, A sẽ ngay lập tức receive và hàm `rcv(...)` bên A trả về giá trị 0.  
+	--> Dấu hiệu nhận biết B cũng đã ngỏ lời ngắt kết nối với A.
+
+3. Bước 3:
+	- Vì A đã chủ động ngỏ lời shutdown trước nên ngay sau khi B shutdown, ta sẽ đóng luôn socket B.  
+	--> Bên B gọi hàm `closesocket(B)`.
+
+4. Bước 4:
+	- Ngay sau khi B shutdown, bên A cũng đã nhận được dấu hiệu nhận biết nên cũng sẽ đóng luôn socket A.  
+	--> Bên A gọi hàm `closesocket(A)`.
+
+
+4. Sau khi 
+
+
 ## Code mẫu
 ### Mutex & Thread
 ```cpp
