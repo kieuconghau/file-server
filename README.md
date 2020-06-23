@@ -170,9 +170,6 @@ Trong đó:
 	--> Bên A gọi hàm `closesocket(A)`.
 
 
-4. Sau khi 
-
-
 ## Code mẫu
 ### Mutex & Thread
 ```cpp
