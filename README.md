@@ -42,11 +42,7 @@ class Server {
 public:
 
 private:
-    semaphore MutexUpload = 1;
-
-    // block(MutexUpload);
-    // // Critical Section
-    // unblock(MutexUpload);
+    mutex MutexUpload;
 
     SOCKET ListenSocket;
     vector<User*> OnlineUserList;
@@ -59,14 +55,15 @@ private:
     string SharedFilesNameFile;     // filename.txt
     string UsersFile;               // user.bin
     // User: USERNAMELEN | USERNAME | PWDLEN | PWD
-}
+};
 
 struct User {
     string Username;
     string Password;
     SOCKET Socket;
-}
+};
 ```
+
 ### Client
 ```cpp
 class Client {
@@ -75,7 +72,7 @@ public:
 private:
     string DatabasePath;            // .../Database/
     string LogFile;                 // logfile.txt
-}
+};
 ```
 
 ## Cấu trúc của một thông điệp (gói tin)
@@ -172,7 +169,7 @@ int main()
 	return 0;
 }
 ```
-### Simple Chat
+### Simple Chat (One Server - Multiple Clients)
 #### Server
 ```cpp
 #ifndef WIN32_LEAN_AND_MEAN
