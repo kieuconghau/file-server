@@ -54,6 +54,7 @@ void Program::homeScreen() {
 	this->printTitle();
 	this->printMode();
 	this->printClient();
+	this->printStatus();
 	this->navigateClient();
 
 	for (int i = 0; i < list.size(); i++) {
@@ -81,7 +82,9 @@ void Program::printMode() {
 }
 
 void Program::navigateMode() {
+	selected = SELECTED::UPLOAD;
 	bool esc = false;
+
 	while (true) {
 
 		if (_kbhit()) {
@@ -89,13 +92,22 @@ void Program::navigateMode() {
 
 			// ============= LEFT/RIGHT =============
 			if ((GetKeyState(VK_LEFT) & 0x8000) || (GetKeyState(VK_RIGHT) & 0x8000)) {
-				selected = (selected == SELECTED::UPLOAD) ? SELECTED::DOWNLOAD : SELECTED::UPLOAD;
-				this->printMode();
+
+				if ((selected == SELECTED::UPLOAD) || (selected == SELECTED::DOWNLOAD)) {
+					selected = (selected == SELECTED::UPLOAD) ? SELECTED::DOWNLOAD : SELECTED::UPLOAD;
+					this->printMode();
+
+					printFile(list[0].name, list[0].size, false); // reset the previous line back to normal
+					line_2 = 0;									  // reset line back to the top of list
+					if (selected == SELECTED::DOWNLOAD) {
+						printFile(list[0].name, list[0].size, true);
+					}
+				}
 				
-				printFile(list[0].name, list[0].size, false); // reset the previous line back to normal
-				line_2 = 0;									  // reset line back to the top of list
-				if (selected == SELECTED::DOWNLOAD) {
-					printFile(list[0].name, list[0].size, true);
+
+				if ((selected == SELECTED::YES) || (selected == SELECTED::NO)) {
+					selected = (selected == SELECTED::YES) ? SELECTED::NO : SELECTED::YES;
+					this->printStatus();
 				}
 			}
 
@@ -124,20 +136,37 @@ void Program::navigateMode() {
 			if (GetKeyState(VK_RETURN) & 0x8000) {
 
 				if (selected == SELECTED::UPLOAD) {
-					this->getUploadPath();
+					this->enterPath();
 					// CSocket UPLOAD file
 
 					// If success or fail, do something
 				}
 
 				if (selected == SELECTED::DOWNLOAD) {
+					this->enterPath();
 					//CSocket DOWNLOAD file
+				}
+
+				if (selected == SELECTED::YES) {
+					esc = true;
+				}
+
+				if (selected == SELECTED::NO) {
+					selected = SELECTED::UPLOAD;
+					printStatus();
 				}
 			}
 
 			// ============= ESC =============
 			if (GetKeyState(VK_ESCAPE) & 0x8000) {
-				esc = true;
+				
+				printFile(list[0].name, list[0].size, false); // reset the previous line back to normal
+				line_2 = 0;									  // reset line back to the top of list
+				selected = SELECTED::UPLOAD;
+				this->printMode();
+
+				selected = SELECTED::NO;
+				this->printStatus();
 			}
 		}
 
@@ -145,7 +174,7 @@ void Program::navigateMode() {
 	}
 }
 
-string Program::getUploadPath() {
+string Program::enterPath() {
 	string path;
 
 	gotoXY(41, 0);
@@ -267,8 +296,15 @@ void Program::navigateClient() {
 				if (selected == SELECTED::REGISTER) {
 					// CSOCKET register
 					printLog("Registration success.");
+					
+					// After Register -> Login
+					selected = SELECTED::LOGIN;
+					this->buttonClient();
+					this->printClient();
+					this->loginClient();
 				}
-				else {
+				
+				if(selected == SELECTED::LOGIN) { 
 					// CSOCKET login
 					printLog("Login success.");
 				}
@@ -279,7 +315,6 @@ void Program::navigateClient() {
 		}
 
 	}
-	selected = SELECTED::UPLOAD;
 }
 
 void Program::loginClient() {
@@ -297,4 +332,40 @@ void Program::loginClient() {
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 13); cout << "Password: ";
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(0, 14); cout << "'============================'";
+}
+
+void Program::printStatus() {
+	if ((selected != SELECTED::YES) && (selected != SELECTED::NO)) {
+		gotoXY(4, 16);
+
+		setColor(COLOR::BLACK, COLOR::LIGHT_GREEN);
+		cout << "        ONLINE        ";
+
+	}
+	else {
+		gotoXY(4, 16);
+
+		setColor(COLOR::BLACK, COLOR::DARK_GRAY);
+		cout << " DISCONECT ";
+
+		if (selected == SELECTED::YES) {
+
+			setColor(COLOR::BLACK, COLOR::LIGHT_RED);
+			cout << " YES ";
+
+			setColor(COLOR::LIGHT_BLUE, COLOR::BLACK);
+			cout << "  NO  ";
+		}
+
+		if (selected == SELECTED::NO) {
+
+			setColor(COLOR::LIGHT_RED, COLOR::BLACK);
+			cout << " YES ";
+
+			setColor(COLOR::BLACK, COLOR::LIGHT_BLUE);
+			cout << "  NO  ";
+		}
+
+	}
+	setColor(COLOR::WHITE, COLOR::BLACK);
 }

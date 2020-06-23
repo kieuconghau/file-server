@@ -6,6 +6,7 @@
 #include <thread>
 #include <sstream>
 #include <ctime>
+#include <conio.h>
 
 #pragma warning(disable:4996) // _CRT_SECURE_NO_WARNINGS
 

@@ -23,6 +23,9 @@ enum class SELECTED {
 	LOGIN,
 	UPLOAD,
 	DOWNLOAD,
+	ESC,
+	YES,
+	NO
 };
 
 class Program
@@ -59,5 +62,7 @@ private:
 
 	void printMode();
 	void navigateMode();
-	string getUploadPath();
+	string enterPath();
+
+	void printStatus();
 };
