@@ -9,7 +9,7 @@
 #include <WS2tcpip.h>
 #include <iostream>
 #include <string>
-using namespace std;
+#include <thread>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -40,9 +40,27 @@ public:
     void run();
 
 private:
-    std::string DatabasePath;            // .../Database/
-    std::string LogFile;                 // logfile.txt
-private:
+    static SOCKET ConnectSocket;
 
+    static std::string ServerIP;
+    static std::string ServerPort;
+
+    static std::string const DATABASE_PATH;            // .../Database/
+    static std::string const LOG_FILE;                 // logfile.txt
+
+    static std::string LastError;
+
+private:
+    static void initDatabase();
+    static void initWinsock();
+    
+    static void initConnectSocket();
+
+    static void transmitMsg();
+
+    static void sendMsg();
+    static void receiveMsg();
+
+    static void receiveAFileFromServer();
 };
 

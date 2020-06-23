@@ -33,35 +33,35 @@ public:
     void run();
 
 private:
-    SOCKET static ListenSocket;
-    std::string const static DEFAULT_PORT;
+    static SOCKET ListenSocket;
+    static std::string const DEFAULT_PORT;
 
-    std::mutex static MutexUpload;
+    static std::mutex MutexUpload;
 
-    std::vector<User*> static UserList;
-    std::vector<User*> static OnlineUserList;
-    std::vector<std::string> static FileNameList;
+    static std::vector<User*> UserList;
+    static std::vector<User*> OnlineUserList;
+    static std::vector<std::string> FileNameList;
 
-    std::string const static DATABASE_PATH;
-    std::string const static  SHARED_FILES_FOLDER;
-    std::string const static LOG_FILE;
-    std::string const static SHARED_FILE_NAMES_FILE;
-    std::string const static USERS_FILE;
+    static std::string const DATABASE_PATH;
+    static std::string const  SHARED_FILES_FOLDER;
+    static std::string const LOG_FILE;
+    static std::string const SHARED_FILE_NAMES_FILE;
+    static std::string const USERS_FILE;
     // User structure in file: USERNAME_LEN | USERNAME | PWD_LEN | PWD
 
-    std::string static LastError;
+    static std::string LastError;
 
 private:
-    void static initDatabase();
-    void static initWinsock();
-    void static initListenSocket();
-    
-    void static acceptConnections();
+    static void initDatabase();
+    static void initWinsock();
 
-    void static transmitMsg(User* user);
+    static void initListenSocket();
+    static void acceptConnections();
 
-    bool static sendMsg(User* user);
-    bool static receiveMsg(User* user);
+    static void transmitMsg(User* user);
 
-    bool static sendFileToClient(std::string const& indexFile_str, User* user);
+    static void sendMsg(User* user);
+    static void receiveMsg(User* user);
+
+    static void sendAFileToClient(std::string const& indexFile_str, User* user);
 };

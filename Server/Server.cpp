@@ -21,9 +21,6 @@ Server::Server()
 {
 	Server::initDatabase();
 	Server::initWinsock();
-	Server::initListenSocket();
-
-	Server::acceptConnections();
 }
 
 Server::~Server()
@@ -41,6 +38,8 @@ Server::~Server()
 
 void Server::run()
 {
+	Server::initListenSocket();
+	Server::acceptConnections();
 }
 
 void Server::initDatabase()
@@ -160,21 +159,19 @@ void Server::transmitMsg(User* user)
 	// ...
 }
 
-bool Server::sendMsg(User* user)
+void Server::sendMsg(User* user)
 {
 	// ...
-
-	return true;
 }
 
-bool Server::receiveMsg(User* user)
+void Server::receiveMsg(User* user)
 {
-	/* Message structure: FLAG | MSGLEN | MSG */
+	/* Message structure: FLAG (1 byte) | MSGLEN (64 byte) | MSG */
 
 	int iResult;
 
 	RcvMsgFlag flag;
-	size_t msgLen;
+	uint64_t msgLen;
 	char* msg = nullptr;
 
 	while (true) {
@@ -183,21 +180,27 @@ bool Server::receiveMsg(User* user)
 		if (iResult == 0)
 			break;
 
-		// Flag
+		// FLAG
 		iResult = recv(user->AcceptSocket, (char*)&flag, sizeof(flag), 0);
-		if (iResult == SOCKET_ERROR)
-			return false;
+		if (iResult == SOCKET_ERROR) {
+			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			return;
+		}
 
-		// MsgLen
+		// MSGLEN
 		iResult = recv(user->AcceptSocket, (char*)&msgLen, sizeof(msgLen), 0);
-		if (iResult == SOCKET_ERROR)
-			return false;
+		if (iResult == SOCKET_ERROR) {
+			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			return;
+		}
 		msg = new char[msgLen + 1];
 
-		// Msg
+		// MSG
 		iResult = recv(user->AcceptSocket, msg, msgLen, 0);
-		if (iResult == SOCKET_ERROR)
-			return false;
+		if (iResult == SOCKET_ERROR) {
+			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			return;
+		}
 		msg[msgLen] = '\0';
 
 		switch (flag)
@@ -215,7 +218,7 @@ bool Server::receiveMsg(User* user)
 			// ...
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE:
-			Server::sendFileToClient(msg, user);
+			Server::sendAFileToClient(msg, user);
 			break;
 		case RcvMsgFlag::LOGOUT:
 			// ...
@@ -227,19 +230,14 @@ bool Server::receiveMsg(User* user)
 		delete[] msg;
 		msg = nullptr;
 	}
-
-	
-	return true;
 }
 
-bool Server::sendFileToClient(std::string const& indexFile_str, User* user)
+void Server::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	size_t indexFile = stoi(indexFile_str);
 
 	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
 
 	// ...
-
-	return true;
 }
 

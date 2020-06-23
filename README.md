@@ -70,6 +70,8 @@ class Client {
 public:
 
 private:
+	SOCKET ConnectSocket;
+
     string DatabasePath;            // .../Database/
     string LogFile;                 // logfile.txt
 };
