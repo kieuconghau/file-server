@@ -113,7 +113,7 @@ Trong đó:
 3. Client connect tới Server.
 4. Server accept và thiết lập đường truyền giữa `AcceptSocket` và `ConnectSocket`. Quá trình trao đổi dữ liệu trên đường truyền vừa thiết lập được bỏ vào một Thread độc lập, dẫn tới Server sẽ tiếp tục listen và đợi kết nối từ các Client khác.
 
-### Đăng ký username
+### Register
 1. Nhập username mà Client muốn đăng ký.
 2. Send gói tin có chứa thông tin của username này cho Server để kiểm tra username này có tồn tại hay chưa theo cú pháp:
     * Nếu tồn tại,...
@@ -125,7 +125,7 @@ Trong đó:
 ### Download File
 
 
-### Upload File
+### Upload File (semaphore)
 
 
 ### Thông báo
