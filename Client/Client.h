@@ -40,8 +40,8 @@ public:
     void run();
 
 private:
-    string DatabasePath;            // .../Database/
-    string LogFile;                 // logfile.txt
+    std::string DatabasePath;            // .../Database/
+    std::string LogFile;                 // logfile.txt
 private:
 
 };

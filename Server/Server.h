@@ -1,21 +1,10 @@
 #pragma once
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+#include "User.h"
 
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <iostream>
-#include <string>
 #include <vector>
 #include <thread>
 #include <mutex>
-
-#pragma comment(lib, "Ws2_32.lib")
-
-using namespace std;
 
 enum class SendMsgFlag : uint8_t
 {
@@ -35,38 +24,44 @@ enum class RcvMsgFlag : uint8_t
     LOGOUT
 };
 
-struct User
-{
-    string Username;
-    string Password;
-    SOCKET AcceptSocket;
-};
-
 class Server
 {
 public:
-    
+    Server();
+    ~Server();
+
     void run();
 
 private:
-    SOCKET ListenSocket;
-    
-    mutex MutexUpload;
+    SOCKET static ListenSocket;
+    std::string const static DEFAULT_PORT;
 
-    vector<User*> OnlineUserList;
-    vector<User*> UserList;
-    vector<string> FileNameList;
+    std::mutex static MutexUpload;
 
-    static string const DatabasePath;            // .../Database/
-    static string const SharedFilesFolder;       // SharedFiles/
-    static string const LogFile;                 // serverlog.txt
-    static string const SharedFilesNameFile;     // sharedfilenames.txt
-    static string const UsersFile;               // users.bin
-                                                 // User: USERNAMELEN | USERNAME | PWDLEN | PWD
+    std::vector<User*> static UserList;
+    std::vector<User*> static OnlineUserList;
+    std::vector<std::string> static FileNameList;
+
+    std::string const static DATABASE_PATH;
+    std::string const static  SHARED_FILES_FOLDER;
+    std::string const static LOG_FILE;
+    std::string const static SHARED_FILE_NAMES_FILE;
+    std::string const static USERS_FILE;
+    // User structure in file: USERNAME_LEN | USERNAME | PWD_LEN | PWD
+
+    std::string static LastError;
+
 private:
-    void initialize();
+    void static initDatabase();
+    void static initWinsock();
+    void static initListenSocket();
     
-    bool receiveMsg(User const& user);
+    void static acceptConnections();
 
-    bool sendFileToClient(string const& indexFile_str, User const& user);
+    void static transmitMsg(User* user);
+
+    bool static sendMsg(User* user);
+    bool static receiveMsg(User* user);
+
+    bool static sendFileToClient(std::string const& indexFile_str, User* user);
 };
