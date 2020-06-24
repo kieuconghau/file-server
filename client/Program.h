@@ -72,20 +72,24 @@ private:
 	
 	// Transfer
 	void receiveMsg();
-	void sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen);
+	void sendMsg(SendMsgFlag const& flag, const char* msg, uint64_t const& msgLen);
 	
 	int receiveData(char* buffer, uint64_t const& len);
-	int sendData(char* buffer, uint64_t const& len);
+	int sendData(const char* buffer, uint64_t const& len);
 
 	// Register
 	void registerAccount();
 
 	// Download File
 	void sendADownloadFileRequest(uint64_t const& fileIndex);
-	void receiveADownloadFileReply(std::string const& downloadPath);
+	void receiveADownloadFileReply(std::string const& downloadedFilePath);
+
+	// Upload File
+	void uploadFile(std::string const& uploadedFilePath);
+	std::string getFileNameFromPath(std::string const& path);
 
 	// Handle error
-	void printError();
+	void printLastError();
 
 	// ...
 	void homeScreen();
@@ -107,3 +111,4 @@ private:
 
 	void printStatus();
 };
+

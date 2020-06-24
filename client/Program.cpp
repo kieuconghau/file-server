@@ -34,13 +34,13 @@ void Program::run()
 
 void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
-
+		// ...
 	}
 	else return;
 }
 
 void Program::initFileList() {
-
+	// ...
 }
 
 void Program::initWinsock()
@@ -51,7 +51,7 @@ void Program::initWinsock()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		this->LastError = "WSAStartup() failed with error: " + std::to_string(iResult);
-		this->printError();
+		this->printLastError();
 	}
 }
 
@@ -70,7 +70,7 @@ void Program::initConnectSocket()
 
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed: " + std::to_string(iResult);
-		this->printError();
+		this->printLastError();
 		return;
 	}
 
@@ -81,7 +81,7 @@ void Program::initConnectSocket()
 
 		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 			this->LastError = "socket() failed with error: " + std::to_string(WSAGetLastError());
-			this->printError();
+			this->printLastError();
 			return;
 		}
 
@@ -98,7 +98,7 @@ void Program::initConnectSocket()
 
 	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 		this->LastError = "Error at socket(): " + std::to_string(WSAGetLastError());
-		this->printError();
+		this->printLastError();
 	}
 
 	freeaddrinfo(result);
@@ -156,7 +156,7 @@ void Program::receiveMsg()
 	}
 }
 
-void Program::sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen)
+void Program::sendMsg(SendMsgFlag const& flag, const char* msg, uint64_t const& msgLen)
 {
 	this->sendData((char*)&flag, sizeof(flag));
 	this->sendData((char*)&msgLen, sizeof(msgLen));
@@ -170,20 +170,20 @@ int Program::receiveData(char* buffer, uint64_t const& len)
 	iResult = recv(this->UserInfo.ConnectSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "recv() failed with error: " + std::to_string(WSAGetLastError());
-		this->printError();
+		this->printLastError();
 	}
 
 	return iResult;
 }
 
-int Program::sendData(char* buffer, uint64_t const& len)
+int Program::sendData(const char* buffer, uint64_t const& len)
 {
 	int iResult;
 
 	iResult = send(this->UserInfo.ConnectSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + std::to_string(WSAGetLastError());
-		this->printError();
+		this->printLastError();
 	}
 
 	return iResult;
@@ -254,9 +254,9 @@ void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
 	// Then, waiting for a reply from the Server and receive file.
 }
 
-void Program::receiveADownloadFileReply(std::string const& downloadPath)
+void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 {
-	std::ofstream fout(downloadPath, std::ios_base::binary);
+	std::ofstream fout(downloadedFilePath, std::ios_base::binary);
 
 	if (fout.is_open()) {
 		int iResult;
@@ -281,12 +281,73 @@ void Program::receiveADownloadFileReply(std::string const& downloadPath)
 		fout.close();
 	}
 	else {
-		this->LastError = "Unable to open file " + downloadPath;
-		this->printError();
+		this->LastError = "Unable to open file " + downloadedFilePath;
+		this->printLastError();
 	}
 }
 
-void Program::printError()
+void Program::uploadFile(std::string const& uploadedFilePath)
+{
+	std::string fileName = this->getFileNameFromPath(uploadedFilePath);
+
+	// Send a request with the corresponding flag first.
+	SendMsgFlag flag = SendMsgFlag::UPLOAD_FILE;
+	const char* msg = fileName.c_str();
+	uint64_t msgLen = fileName.length();
+
+	this->sendMsg(flag, msg, msgLen);
+
+	// Then, send the file to the Server.
+	ifstream fin(uploadedFilePath, std::ios_base::binary);
+
+	if (fin.is_open()) {
+		int iResult;
+
+		uint64_t fileSize;
+		char* buffer = new char[this->BUFFER_LEN];
+
+		// Get file's size
+		fin.seekg(0, std::ios_base::end);
+		fileSize = fin.tellg();
+		fin.seekg(0, std::ios_base::beg);
+
+		// Send file's size
+		this->sendData((char*)&fileSize, sizeof(fileSize));
+
+		// Send file's data
+		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
+			fin.read(buffer, this->BUFFER_LEN);
+			this->sendData(buffer, this->BUFFER_LEN);
+		}
+		fin.read(buffer, fileSize % this->BUFFER_LEN);
+		this->sendData(buffer, fileSize % this->BUFFER_LEN);
+
+		// Release resources
+		delete[] buffer;
+		fin.close();
+
+		fin.close();
+	}
+	else {
+		this->LastError = "Unable to open file " + uploadedFilePath;
+		this->printLastError();
+	}
+}
+
+std::string Program::getFileNameFromPath(std::string const& path)
+{
+	size_t startPos = 0;
+	for (int i = path.length(); i >= 0; --i) {
+		if (path[i] == '\\' || path[i] == '/') {
+			startPos = i + 1;
+			break;
+		}
+	}
+
+	return path.substr(startPos, path.length() - startPos);
+}
+
+void Program::printLastError()
 {
 	cout << this->LastError << "\n";
 }
@@ -381,15 +442,13 @@ void Program::navigateMode() {
 			if (GetKeyState(VK_RETURN) & 0x8000) {
 
 				if (selected == SELECTED::UPLOAD) {
-					this->enterPath();
-					// CSocket UPLOAD file
-
-					// If success or fail, do something
+					std::string uploadedFilePath = this->enterPath();
+					this->uploadFile(uploadedFilePath);		// ... Suppose that 'uploadedFilePath' is valid.
 				}
 
 				if (selected == SELECTED::DOWNLOAD) {
 					if (FileList.size() > 0) {
-						this->sendADownloadFileRequest(this->line_2);
+						this->sendADownloadFileRequest(this->line_2);	// ... Download at the default path.
 					}
 				}
 

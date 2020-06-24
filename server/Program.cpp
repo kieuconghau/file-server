@@ -37,6 +37,7 @@ void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
 		CreateDirectory(s2ws(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER).c_str(), NULL);
 	}
+	else return;
 }
 
 void Program::initUserList() {
@@ -206,9 +207,11 @@ void Program::receiveMsg(User* user)
 		case RcvMsgFlag::PASSWORD:
 			// ...
 			break;
-		case RcvMsgFlag::UPLOAD_FILE:
-			// ...
+		case RcvMsgFlag::UPLOAD_FILE: {
+			std::thread uploadFileThread(&Program::receiveAFileFromClient, this, msg, user);
+			uploadFileThread.join();	// ...
 			break;
+		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
 			std::thread sendFileThread(&Program::sendAFileToClient, this, msg, user);
 			sendFileThread.detach();
@@ -429,6 +432,38 @@ std::string Program::getPathOfAFile(uint64_t const& indexFile)
 		throw "Out of subscript";
 
 	return this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + this->FileNameList[indexFile];
+}
+
+void Program::receiveAFileFromClient(std::string const& uploadFileName, User* user)
+{
+	std::ofstream fout(this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + uploadFileName, std::ios_base::binary);
+
+	if (fout.is_open()) {
+		int iResult;
+
+		uint64_t fileSize;
+		char* buffer = new char[this->BUFFER_LEN];
+
+		// Receive file's size
+		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
+
+		// Receive file's data
+		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
+			this->receiveData(user, buffer, this->BUFFER_LEN);
+			fout.write(buffer, this->BUFFER_LEN);
+		}
+
+		this->receiveData(user, buffer, fileSize % this->BUFFER_LEN);
+		fout.write(buffer, fileSize % this->BUFFER_LEN);
+
+		// Release resources
+		delete[] buffer;
+		fout.close();
+	}
+	else {
+		this->LastError = "Unable to create file " + uploadFileName;
+		this->printLastError();
+	}
 }
 
 void Program::printLastError()

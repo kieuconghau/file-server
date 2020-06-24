@@ -25,3 +25,4 @@ private:
     std::string Password;
     SOCKET AcceptSocket;
 };
+

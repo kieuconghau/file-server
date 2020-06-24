@@ -94,6 +94,9 @@ private:
 	void sendAFileToClient(std::string const& indexFile_str, User* user);
 	std::string getPathOfAFile(uint64_t const& indexFile);
 
+	// Upload File
+	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
+
 	// Handle error
 	void printLastError();
 
@@ -112,3 +115,4 @@ private:
 
 	void test();
 };
+
