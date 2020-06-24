@@ -74,6 +74,7 @@ private:
 	void registerAccount();
 
 	// Download File
+	void downloadFile(size_t const& fileIndex, std::string const& downloadPath);
 	void sendADownloadFileRequest(size_t const& fileIndex);
 	void receiveAFileFromServer(std::string const& downloadPath);
 

@@ -366,13 +366,11 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	size_t indexFile = stoi(indexFile_str);
 
-	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
-
 	std::ifstream fin(this->getPathOfAFile(indexFile), std::ios_base::binary);
 
 	if (fin.is_open()) {
 		int iResult;
-		size_t fileSize;
+		uint64_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
 		fin.seekg(std::ios_base::end);

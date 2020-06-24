@@ -214,6 +214,12 @@ void Program::registerAccount() {
 	}
 }
 
+void Program::downloadFile(size_t const& fileIndex, std::string const& downloadPath)
+{
+	this->sendADownloadFileRequest(fileIndex);
+	this->receiveAFileFromServer(downloadPath);
+}
+
 void Program::sendADownloadFileRequest(size_t const& fileIndex)
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (string) */
@@ -225,8 +231,8 @@ void Program::sendADownloadFileRequest(size_t const& fileIndex)
 	std::string msg;
 
 	flag = SendMsgFlag::DOWNLOAD_FILE;
-	msgLen = sizeof(msg);
 	msg = std::to_string(fileIndex);
+	msgLen = msg.length();             
 
 	iResult = send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 	if (iResult == SOCKET_ERROR) {
@@ -257,7 +263,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 	if (fout.is_open()) {
 		int iResult;
 		
-		size_t fileSize;
+		uint64_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
 		// Receive file's size
