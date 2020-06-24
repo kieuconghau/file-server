@@ -140,17 +140,17 @@ void Client::receiveMsg()
 
 void Client::sendADownloadFileRequest(size_t const& fileIndex)
 {
-	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (uint64_t) */
+	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (string) */
 
 	int iResult;
 
 	SendMsgFlag flag;
 	uint64_t msgLen;
-	uint64_t msg;
+	std::string msg;
 
 	flag = SendMsgFlag::DOWNLOAD_FILE;
 	msgLen = sizeof(msg);
-	msg = fileIndex;
+	msg = std::to_string(fileIndex);
 
 	iResult = send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 	if (iResult == SOCKET_ERROR) {
@@ -164,7 +164,7 @@ void Client::sendADownloadFileRequest(size_t const& fileIndex)
 		return;
 	}
 
-	iResult = send(this->UserInfo.ConnectSocket, (char*)&msg, msgLen, 0);
+	iResult = send(this->UserInfo.ConnectSocket, msg.c_str(), msgLen, 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
 		return;

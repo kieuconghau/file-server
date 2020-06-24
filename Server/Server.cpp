@@ -1,12 +1,12 @@
 #include "Server.h"
 
-Server::Server()
+Program::Program()
 {
 	this->initDatabase();
 	this->initWinsock();
 }
 
-Server::~Server()
+Program::~Program()
 {
 	closesocket(this->ListenSocket);
 
@@ -19,13 +19,13 @@ Server::~Server()
 	WSACleanup();
 }
 
-void Server::run()
+void Program::run()
 {
 	this->initListenSocket();
 	this->acceptConnections();
 }
 
-void Server::initDatabase()
+void Program::initDatabase()
 {
 	/*
 		Create:
@@ -39,7 +39,7 @@ void Server::initDatabase()
 	// ...
 }
 
-void Server::initWinsock()
+void Program::initWinsock()
 {
 	WSADATA wsaData;
 	int iResult;
@@ -50,7 +50,7 @@ void Server::initWinsock()
 	}
 }
 
-void Server::initListenSocket()
+void Program::initListenSocket()
 {
 	// Create a socket for listening to all connections from Clients.
 	struct addrinfo* result = nullptr;	// A pointer to a linked list of one or more addrinfo structures that contains response information about the host.
@@ -99,7 +99,7 @@ void Server::initListenSocket()
 	}
 }
 
-void Server::acceptConnections()
+void Program::acceptConnections()
 {
 	while (true) {
 		SOCKET acceptSocket = INVALID_SOCKET;
@@ -113,14 +113,14 @@ void Server::acceptConnections()
 
 		User* user = new User(acceptSocket);
 		
-		std::thread dataTranmissionThread(&Server::transmitMsg, this, user);
+		std::thread dataTranmissionThread(&Program::transmitMsg, this, user);
 	}
 }
 
-void Server::transmitMsg(User* user)
+void Program::transmitMsg(User* user)
 {
-	std::thread sendMsgThread(&Server::sendMsg, this, user);
-	std::thread receiveMsgThread(&Server::receiveMsg, this, user);
+	std::thread sendMsgThread(&Program::sendMsg, this, user);
+	std::thread receiveMsgThread(&Program::receiveMsg, this, user);
 
 	// How to pass this while(true)?
 	// ...
@@ -138,12 +138,12 @@ void Server::transmitMsg(User* user)
 	// ...
 }
 
-void Server::sendMsg(User* user)
+void Program::sendMsg(User* user)
 {
 	// ...
 }
 
-void Server::receiveMsg(User* user)
+void Program::receiveMsg(User* user)
 {
 	/* Message structure: FLAG (1 byte) | MSGLEN (64 byte) | MSG */
 
@@ -151,7 +151,7 @@ void Server::receiveMsg(User* user)
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
-	char* msg = nullptr;
+	char* msg;
 
 	while (true) {
 		// FLAG
@@ -210,12 +210,46 @@ void Server::receiveMsg(User* user)
 	}
 }
 
-void Server::sendAFileToClient(std::string const& indexFile_str, User* user)
+void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	size_t indexFile = stoi(indexFile_str);
 
 	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
+	
+	std::ifstream fout(this->getPathOfAFile(indexFile), std::ios_base::binary);
 
-	// ...
+	if (fout.is_open()) {
+		int iResult;
+		size_t fileSize;
+		char* buffer = new char[this->BUFFER_LEN];
+
+		fout.seekg(std::ios_base::end);
+		fileSize = fout.gcount();
+
+		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
+			fout.read(buffer, this->BUFFER_LEN);
+			iResult = send(user->AcceptSocket, buffer, this->BUFFER_LEN, 0);
+			if (iResult == SOCKET_ERROR) {
+				this->LastError = "send() failed with error: " + WSAGetLastError();
+				return;
+			}
+		}
+
+		fout.read(buffer, fileSize % this->BUFFER_LEN);
+		iResult = send(user->AcceptSocket, buffer, fileSize % this->BUFFER_LEN, 0);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "send() failed with error: " + WSAGetLastError();
+			return;
+		}
+
+		delete[] buffer;
+		fout.close();
+	}
 }
+
+std::string Program::getPathOfAFile(size_t const& indexFile)
+{
+	return this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + this->FileNameList[indexFile];
+}
+
 

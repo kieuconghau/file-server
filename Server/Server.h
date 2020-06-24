@@ -3,6 +3,7 @@
 #include "User.h"
 
 #include <vector>
+#include <fstream>
 #include <thread>
 #include <mutex>
 
@@ -24,17 +25,17 @@ enum class RcvMsgFlag : uint8_t
     LOGOUT
 };
 
-class Server
+class Program
 {
 public:
-    Server();
-    ~Server();
+    Program();
+    ~Program();
 
     void run();
 
 private:
     SOCKET ListenSocket;
-    std::string const DEFAULT_PORT = "27015";   // ...
+    std::string const DEFAULT_PORT = "27015";   // ... Random
 
     std::mutex MutexUpload;
 
@@ -42,8 +43,10 @@ private:
     std::vector<User*> OnlineUserList;
     std::vector<std::string> FileNameList;
 
+    uint16_t const BUFFER_LEN = 4096;
+
     std::string const DATABASE_PATH = "Server_Database";
-    std::string const  SHARED_FILES_FOLDER = "SharedFiles";
+    std::string const SHARED_FILES_FOLDER = "SharedFiles";
     std::string const LOG_FILE = "logfile.txt";
     std::string const SHARED_FILE_NAMES_FILE = "filename.bin";
     std::string const USERS_FILE = "user.bin";
@@ -66,4 +69,6 @@ private:
     void receiveMsg(User* user);
 
     void sendAFileToClient(std::string const& indexFile_str, User* user);
+
+    std::string getPathOfAFile(size_t const& indexFile);
 };
