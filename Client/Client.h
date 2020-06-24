@@ -45,7 +45,7 @@ private:
     std::string ServerIP;
     std::string ServerPort;
 
-    std::string const DATABASE_PATH = "Database/";
+    std::string const DATABASE_PATH = "Client_Database";
     std::string const LOG_FILE = "logfile.txt";
 
     std::string LastError;
