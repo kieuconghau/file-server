@@ -1,35 +1,18 @@
 #include "Server.h"
 
-SOCKET Server::ListenSocket;
-std::string const Server::DEFAULT_PORT = "27015";
-
-std::mutex Server::MutexUpload;
-
-std::vector<User*> Server::UserList;
-std::vector<User*> Server::OnlineUserList;
-std::vector<std::string> Server::FileNameList;
-
-std::string const Server::DATABASE_PATH = "Database/";
-std::string const Server::SHARED_FILES_FOLDER = "SharedFiles/";
-std::string const Server::LOG_FILE = "serverlog.txt";
-std::string const Server::SHARED_FILE_NAMES_FILE = "sharedfilenames.txt";
-std::string const Server::USERS_FILE = "users.bin";
-
-std::string Server::LastError;
-
 Server::Server()
 {
-	Server::initDatabase();
-	Server::initWinsock();
+	this->initDatabase();
+	this->initWinsock();
 }
 
 Server::~Server()
 {
-	closesocket(Server::ListenSocket);
+	closesocket(this->ListenSocket);
 
-	for (size_t i = 0; i < Server::UserList.size(); ++i) {
-		delete Server::UserList[i];
-		Server::UserList[i] = nullptr;
+	for (size_t i = 0; i < this->UserList.size(); ++i) {
+		delete this->UserList[i];
+		this->UserList[i] = nullptr;
 	}
 
 	// When the client application is completed using the Windows Sockets DLL, the WSACleanup function is called to release resources.
@@ -38,8 +21,8 @@ Server::~Server()
 
 void Server::run()
 {
-	Server::initListenSocket();
-	Server::acceptConnections();
+	this->initListenSocket();
+	this->acceptConnections();
 }
 
 void Server::initDatabase()
@@ -63,7 +46,7 @@ void Server::initWinsock()
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		Server::LastError = "WSAStartup() failed with error: " + iResult;
+		this->LastError = "WSAStartup() failed with error: " + iResult;
 	}
 }
 
@@ -80,27 +63,27 @@ void Server::initListenSocket()
 	hints.ai_protocol = IPPROTO_TCP;	// The Transmission Control Protocol (TCP).
 	hints.ai_flags = AI_PASSIVE;		// The socket address will be used in a call to the bindfunction.
 
-	iResult = getaddrinfo(nullptr, (LPCSTR)&Server::DEFAULT_PORT, &hints, &result);	// Update 'result' with port, IP address,...
+	iResult = getaddrinfo(nullptr, (LPCSTR)&this->DEFAULT_PORT, &hints, &result);	// Update 'result' with port, IP address,...
 	if (iResult != 0) {
-		Server::LastError = "getaddrinfo() failed with error: " + iResult;
+		this->LastError = "getaddrinfo() failed with error: " + iResult;
 		return;
 	}
 
-	Server::ListenSocket = INVALID_SOCKET;
+	this->ListenSocket = INVALID_SOCKET;
 
-	Server::ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	this->ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
-	if (Server::ListenSocket == INVALID_SOCKET) {
-		Server::LastError = "socket() failed with error: " + WSAGetLastError();
+	if (this->ListenSocket == INVALID_SOCKET) {
+		this->LastError = "socket() failed with error: " + WSAGetLastError();
 		freeaddrinfo(result);
 		return;
 	}
 
 	// Bind the socket which has already been created (ListenSocket) to an IP address and port (result->ai_addr: the first sockadrr in the linked list result).
 	// (The IP address and port are retrieved from the variable 'result', which has been updated after the execution of the function 'getaddrinfo'.)
-	iResult = bind(Server::ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+	iResult = bind(this->ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
-		Server::LastError = "bind() failed with error: " + WSAGetLastError();
+		this->LastError = "bind() failed with error: " + WSAGetLastError();
 		freeaddrinfo(result);
 		return;
 	}
@@ -109,9 +92,9 @@ void Server::initListenSocket()
 	freeaddrinfo(result);
 
 	// Let the socket which has already bind (ListenSocket) listen to all connections from Clients.
-	iResult = listen(Server::ListenSocket, SOMAXCONN);	// backlog = SOMAXCONN: the maximum length of the queue of pending connections to accept.
+	iResult = listen(this->ListenSocket, SOMAXCONN);	// backlog = SOMAXCONN: the maximum length of the queue of pending connections to accept.
 	if (iResult == SOCKET_ERROR) {
-		Server::LastError = "listen() failed with error: " + WSAGetLastError();
+		this->LastError = "listen() failed with error: " + WSAGetLastError();
 		return;
 	}
 }
@@ -121,36 +104,32 @@ void Server::acceptConnections()
 	while (true) {
 		SOCKET acceptSocket = INVALID_SOCKET;
 
-		acceptSocket = accept(Server::ListenSocket, nullptr, nullptr);
+		acceptSocket = accept(this->ListenSocket, nullptr, nullptr);
 
 		if (acceptSocket == INVALID_SOCKET) {
-			Server::LastError = "accept() failed: " + WSAGetLastError();
+			this->LastError = "accept() failed: " + WSAGetLastError();
 			continue;
 		}
 
 		User* user = new User(acceptSocket);
 		
-		std::thread dataTranmissionThread(Server::transmitMsg, user);
-		dataTranmissionThread.join();
+		std::thread dataTranmissionThread(&Server::transmitMsg, this, user);
 	}
 }
 
 void Server::transmitMsg(User* user)
 {
-	std::thread sendMsgThread(Server::sendMsg, user);
-	std::thread receiveMsgThread(Server::receiveMsg, user);
-
-	sendMsgThread.join();
-	receiveMsgThread.join();
+	std::thread sendMsgThread(&Server::sendMsg, this, user);
+	std::thread receiveMsgThread(&Server::receiveMsg, this, user);
 
 	// How to pass this while(true)?
 	// ...
 	while (true);
 
 	// Now, this user is offline so we discard this user from the OnlineUserList
-	for (size_t i = 0; i < Server::OnlineUserList.size(); ++i) {
-		if (Server::OnlineUserList[i] == user) {
-			Server::OnlineUserList.erase(Server::OnlineUserList.begin() + i);
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		if (this->OnlineUserList[i] == user) {
+			this->OnlineUserList.erase(this->OnlineUserList.begin() + i);
 			break;
 		}
 	}
@@ -183,14 +162,14 @@ void Server::receiveMsg(User* user)
 		// FLAG
 		iResult = recv(user->AcceptSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
-			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 
 		// MSGLEN
 		iResult = recv(user->AcceptSocket, (char*)&msgLen, sizeof(msgLen), 0);
 		if (iResult == SOCKET_ERROR) {
-			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 		msg = new char[msgLen + 1];
@@ -198,7 +177,7 @@ void Server::receiveMsg(User* user)
 		// MSG
 		iResult = recv(user->AcceptSocket, msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
-			Server::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 		msg[msgLen] = '\0';
@@ -218,7 +197,7 @@ void Server::receiveMsg(User* user)
 			// ...
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE:
-			Server::sendAFileToClient(msg, user);
+			this->sendAFileToClient(msg, user);
 			break;
 		case RcvMsgFlag::LOGOUT:
 			// ...

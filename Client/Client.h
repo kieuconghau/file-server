@@ -40,27 +40,27 @@ public:
     void run();
 
 private:
-    static SOCKET ConnectSocket;
+    SOCKET ConnectSocket;
 
-    static std::string ServerIP;
-    static std::string ServerPort;
+    std::string ServerIP;
+    std::string ServerPort;
 
-    static std::string const DATABASE_PATH;            // .../Database/
-    static std::string const LOG_FILE;                 // logfile.txt
+    std::string const DATABASE_PATH = "Database/";
+    std::string const LOG_FILE = "logfile.txt";
 
-    static std::string LastError;
+    std::string LastError;
 
 private:
-    static void initDatabase();
-    static void initWinsock();
+    void initDatabase();
+    void initWinsock();
     
-    static void initConnectSocket();
+    void initConnectSocket();
 
-    static void transmitMsg();
+    void transmitMsg();
 
-    static void sendMsg();
-    static void receiveMsg();
+    void sendMsg();
+    void receiveMsg();
 
-    static void receiveAFileFromServer();
+    void receiveAFileFromServer();
 };
 

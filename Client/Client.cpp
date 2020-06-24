@@ -1,19 +1,9 @@
 #include "Client.h"
 
-SOCKET Client::ConnectSocket;
-
-std::string Client::ServerIP;
-std::string Client::ServerPort;
-
-std::string const Client::DATABASE_PATH = "Database/";
-std::string const Client::LOG_FILE = "logfile.txt";
-
-std::string Client::LastError;
-
 Client::Client()
 {
-	Client::initDatabase();
-	Client::initWinsock();
+	this->initDatabase();
+	this->initWinsock();
 }
 
 Client::~Client()
@@ -22,7 +12,7 @@ Client::~Client()
 
 void Client::run()
 {
-	Client::initConnectSocket();
+	this->initConnectSocket();
 }
 
 void Client::initDatabase()
@@ -37,7 +27,7 @@ void Client::initWinsock()
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		Client::LastError = "WSAStartup() failed with error: " + iResult;
+		this->LastError = "WSAStartup() failed with error: " + iResult;
 	}
 }
 
@@ -52,36 +42,36 @@ void Client::initConnectSocket()
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	iResult = getaddrinfo((PCSTR)&Client::ServerIP, (PCSTR)&Client::ServerPort, &hints, &result);	// Update 'result' with port, IP address,...
+	iResult = getaddrinfo((PCSTR)&this->ServerIP, (PCSTR)&this->ServerPort, &hints, &result);	// Update 'result' with port, IP address,...
 
 	if (iResult != 0) {
-		Client::LastError = "getaddrinfo() failed: " + iResult;
+		this->LastError = "getaddrinfo() failed: " + iResult;
 		return;
 	}
 
-	Client::ConnectSocket = INVALID_SOCKET;
+	this->ConnectSocket = INVALID_SOCKET;
 
 	for (auto ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-		Client::ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+		this->ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 		
-		if (Client::ConnectSocket == INVALID_SOCKET) {
-			Client::LastError = "socket() failed with error: " + WSAGetLastError();
+		if (this->ConnectSocket == INVALID_SOCKET) {
+			this->LastError = "socket() failed with error: " + WSAGetLastError();
 			return;
 		}
 
-		iResult = connect(Client::ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+		iResult = connect(this->ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 		
 		if (iResult == SOCKET_ERROR) {
-			closesocket(Client::ConnectSocket);
-			Client::ConnectSocket = INVALID_SOCKET;
+			closesocket(this->ConnectSocket);
+			this->ConnectSocket = INVALID_SOCKET;
 			continue;
 		}
 
 		break;
 	}
 
-	if (Client::ConnectSocket == INVALID_SOCKET) {
-		Client::LastError = "Error at socket(): " + WSAGetLastError();
+	if (this->ConnectSocket == INVALID_SOCKET) {
+		this->LastError = "Error at socket(): " + WSAGetLastError();
 	}
 
 	freeaddrinfo(result);
@@ -89,12 +79,9 @@ void Client::initConnectSocket()
 
 void Client::transmitMsg()
 {
-	std::thread sendMsgThread(Client::sendMsg);
-	std::thread receiveMsgThread(Client::receiveMsg);
+	std::thread sendMsgThread(&Client::sendMsg, this);
+	std::thread receiveMsgThread(&Client::receiveMsg, this);
 
-	sendMsgThread.join();
-	receiveMsgThread.join();
-	
 	// How to pass this while(true)?
 	// ...
 	while (true);
@@ -117,29 +104,29 @@ void Client::receiveMsg()
 
 	while (true) {
 		// Client shutdown check
-		iResult = recv(Client::ConnectSocket, nullptr, 0, 0);
+		iResult = recv(this->ConnectSocket, nullptr, 0, 0);
 		if (iResult == 0)
 			break;
 
 		// FLAG
-		iResult = recv(Client::ConnectSocket, (char*)&flag, sizeof(flag), 0);
+		iResult = recv(this->ConnectSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
-			Client::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 
 		// MSGLEN
-		iResult = recv(Client::ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+		iResult = recv(this->ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
 		if (iResult == SOCKET_ERROR) {
-			Client::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 		msg = new char[msgLen + 1];
 
 		// MSG
-		iResult = recv(Client::ConnectSocket, msg, msgLen, 0);
+		iResult = recv(this->ConnectSocket, msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
-			Client::LastError = "recv() failed with error: " + WSAGetLastError();
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
 		msg[msgLen] = '\0';
@@ -153,7 +140,7 @@ void Client::receiveMsg()
 			// ...
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE:
-			Client::receiveAFileFromServer();
+			this->receiveAFileFromServer();
 			break;
 		case RcvMsgFlag::LOGOUT:
 			// ...
