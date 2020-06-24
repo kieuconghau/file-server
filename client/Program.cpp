@@ -2,39 +2,24 @@
 
 void Program::InitFileList() {
 	
-	File a;
-	a.name = "abcefg.txt"; 
-	a.size = 4096;
-	list.push_back(a);
+}
 
-	File b;
-	b.name = "1233444.docx";
-	b.size = 1128040;
-	list.push_back(b);
-
-	File c;
-	c.name = "testingtesting.txt";
-	c.size = 280400;
-	list.push_back(c);
-
-	File d;
-	d.name = "1230493111.bin";
-	d.size = 12333123;
-	list.push_back(d);
-
-	File e;
-	e.name = "boobie.jpg";
-	e.size = 113333123;
-	list.push_back(e);
+void Program::InitDataBaseDirectory() {
+	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
+		
+	}
+	else return;
 }
 
 Program::Program()
 {
 	FixSizeWindow(110, 30);
 	FixConsoleWindow();
-	selected = SELECTED::REGISTER;
-	line_2 = 0;
-	line_3 = 2;
+
+	/* GUI */
+	this->selected = SELECTED::REGISTER;
+	this->line_2 = 0;
+	this->line_3 = 2;
 
 	//Init something you need
 	InitFileList();
@@ -57,8 +42,8 @@ void Program::homeScreen() {
 	this->printStatus();
 	this->navigateClient();
 
-	for (int i = 0; i < list.size(); i++) {
-		printFile(list[i].name, list[i].size, false);
+	for (int i = 0; i < FileList.size(); i++) {
+		printFile(FileList[i].fileName, FileList[i].fileSize, false);
 		line_2++;
 	}
 	line_2 = 2;
@@ -97,10 +82,12 @@ void Program::navigateMode() {
 					selected = (selected == SELECTED::UPLOAD) ? SELECTED::DOWNLOAD : SELECTED::UPLOAD;
 					this->printMode();
 
-					printFile(list[0].name, list[0].size, false); // reset the previous line back to normal
-					line_2 = 0;									  // reset line back to the top of list
-					if (selected == SELECTED::DOWNLOAD) {
-						printFile(list[0].name, list[0].size, true);
+					if (FileList.size() > 0) {
+						printFile(FileList[0].fileName, FileList[0].fileSize, false); // reset the previous line back to normal
+						line_2 = 0;									  // reset line back to the top of FileList
+						if (selected == SELECTED::DOWNLOAD) {
+							printFile(FileList[0].fileName, FileList[0].fileSize, true);
+						}
 					}
 				}
 				
@@ -114,22 +101,25 @@ void Program::navigateMode() {
 			// ============= UP =============
 			if (GetKeyState(VK_UP) & 0x8000) {
 				if (selected == SELECTED::DOWNLOAD) {
-					printFile(list[line_2].name, list[line_2].size, false); // reset the previous line back to normal
-					line_2--;
-					line_2 += (line_2 < 0) ? list.size() : 0;
-					printFile(list[line_2].name, list[line_2].size, true);
+					if (FileList.size() > 0) {
+						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+						line_2--;
+						line_2 += (line_2 < 0) ? FileList.size() : 0;
+						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, true);
+					}
 				}
 			}
 
 			// ============= DOWN =============
 			if (GetKeyState(VK_DOWN) & 0x8000) {
 				if (selected == SELECTED::DOWNLOAD) {
-					printFile(list[line_2].name, list[line_2].size, false); // reset the previous line back to normal
-					line_2++;
-					line_2 %= list.size();
-					printFile(list[line_2].name, list[line_2].size, true);
+					if (FileList.size() > 0) {
+						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+						line_2++;
+						line_2 %= FileList.size();
+						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, true);
+					}
 				}
-
 			}
 
 			// ============= ENTER =============
@@ -143,8 +133,10 @@ void Program::navigateMode() {
 				}
 
 				if (selected == SELECTED::DOWNLOAD) {
-					this->enterPath();
-					//CSocket DOWNLOAD file
+					if (FileList.size() > 0) {
+						this->enterPath();
+						//CSocket DOWNLOAD file
+					}
 				}
 
 				if (selected == SELECTED::YES) {
@@ -159,9 +151,10 @@ void Program::navigateMode() {
 
 			// ============= ESC =============
 			if (GetKeyState(VK_ESCAPE) & 0x8000) {
-				
-				printFile(list[0].name, list[0].size, false); // reset the previous line back to normal
-				line_2 = 0;									  // reset line back to the top of list
+				if (FileList.size() > 0) {
+					printFile(FileList[0].fileName, FileList[0].fileSize, false); // reset the previous line back to normal
+					line_2 = 0;									  // reset line back to the top of FileList
+				}
 				selected = SELECTED::UPLOAD;
 				this->printMode();
 
@@ -199,14 +192,14 @@ void Program::printTitle() {
 	setColor(COLOR::WHITE, COLOR::BLACK);
 }
 
-void Program::printFile(string name, int size, bool selected) {
+void Program::printFile(string name, string size, bool selected) {
 	gotoXY(30, line_2 + 2);
-	
+	 
 	if (selected) {
 		setColor(COLOR::BLACK, COLOR::LIGHT_BLUE);
 	}
 	else setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << " " << name; printSpace(27 - name.length() - numCommas(size).length()); cout << numCommas(size) << " ";
+	cout << " " << name; printSpace(27 - name.length() - size.length()); cout << size << " ";
 }
 
 void Program::printLog(string content) {
@@ -319,16 +312,16 @@ void Program::navigateClient() {
 
 void Program::loginClient() {
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> user.ip;
+	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> this->ServerIP;
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
 
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 12); cout << "Username: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> user.username;
+	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> UserInfo.Username;
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 12); cout << "Username: ";
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 13); cout << "Password: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);	                  user.password = hidePassword();
+	setColor(COLOR::WHITE, COLOR::BLACK);	                  UserInfo.Password = hidePassword();
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 13); cout << "Password: ";
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(0, 14); cout << "'============================'";

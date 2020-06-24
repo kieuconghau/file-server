@@ -2,16 +2,90 @@
 
 Program::Program()
 {
+	this->test();
 	FixSizeWindow(110, 30);
 	FixConsoleWindow();
+
+	/* GUI */
 	line_1 = line_2 = line_3 = 2;
 	selected = SELECTED::ONLINE;
+
 	//Init something you need
+	this->InitDataBaseDirectory();
+	this->InitUserList();
+	this->InitFileNameList();
+}
+
+void Program::InitDataBaseDirectory() {
+	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
+		CreateDirectory(s2ws(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER).c_str(), NULL);
+	}
+	else return;
+}
+
+void Program::InitUserList() {
+	fstream f(DATABASE_PATH + "\\" + USER_FILE,
+		std::fstream::in | std::fstream::binary);
+
+	while (true) {
+		User*    temp = new User;
+		
+		getline(f, temp->Username, '\0');
+
+		if (f.eof()) {
+			delete temp;
+			break;
+		}
+
+		getline(f, temp->Password, '\0');
+
+		this->UserList.push_back(temp);
+	}
+
+	f.close();
+}
+
+void Program::InitFileNameList() {
+	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE,
+		std::fstream::in | std::fstream::binary);
+
+	while (true) {
+		string str;
+
+		getline(f, str, '\0');
+
+		if (f.eof()) {
+			break;
+		}
+
+		string* filename = new string;
+		*filename = str;
+		this->FileNameList.push_back(*filename);
+	}
+
+	f.close();
+}
+
+unsigned long Program::fileSizeBytes(string filename) {
+	ifstream f(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER + "\\" + filename,
+		std::fstream::ate | std::fstream::binary);
+
+	if (!f.is_open()) {
+		return 0;
+	}
+
+	return f.tellg();
 }
 
 Program::~Program()
 {
-	//Del things you init
+	for (int i = 0; i < UserList.size(); i++) {
+		delete UserList[i];
+	}
+
+	for (int i = 0; i < FileNameList.size(); i++) {
+		delete& FileNameList[i];
+	}
 }
 
 void Program::run()
@@ -111,19 +185,22 @@ void Program::homeScreen() {
 	printStatus();
 
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	
-	printClient();
-	printFiles();
+
+	for (int i = 0; i < UserList.size(); i++) {
+		printClient(UserList[i]->Username, false);
+	}
+
+	for (int i = 0; i < FileNameList.size(); i++) {
+		printFiles(FileNameList[i]);
+	}
+
 	printLog();
 
 	navigateStatus();
 
 }
 
-void Program::printClient() {
-	string user = "tambuu2804";
-	bool login = 0;
-
+void Program::printClient(string user, bool login) {
 	if (login) {
 		gotoXY(1, line_1);
 		setColor(COLOR::WHITE, COLOR::BLACK);
@@ -138,16 +215,46 @@ void Program::printClient() {
 		setColor(COLOR::RED, COLOR::BLACK);
 		cout << "[OFF]";
 	}
+	line_1++;
 }
 
-void Program::printFiles() {
-	string name = "eqweqw.xyz";
-	int size = 4096;
+void Program::printFiles(string filename) {
+	string size = toStringFileSize(filename);
+	filename = shortenFileName(filename);
 
 	gotoXY(30, line_2);
 
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << " " << name; printSpace(27 - name.length() - numCommas(size).length()); cout << numCommas(size);
+
+	cout << " " << filename;
+	printSpace(27 - filename.length() - size.length()); 
+	cout << size;
+
+	line_2++;
+}
+
+string Program::toStringFileSize(string filename) {
+	unsigned long size = fileSizeBytes(filename);
+	uint8_t d = 0;
+
+	while (size > 1000) {
+		size /= 1000;
+		d++;
+	}
+
+	string parameter[] = { " B", "KB", "MB", "GB" };
+	
+	return numCommas(size) + " " + parameter[d];
+}
+
+string Program::shortenFileName(string filename) {
+	if (filename.length() > 20) {
+		string str1 = filename.substr(0, 10);
+		string str2 = filename.substr(filename.length() - 7, 7);
+		filename = str1 + "..." + str2;
+	}
+
+	return filename;
 }
 
 void Program::printLog() {
@@ -167,3 +274,17 @@ void Program::printLog() {
 	setColor(COLOR::WHITE, COLOR::BLACK);
 }
 
+void Program::test() {
+	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE, 
+		std::fstream::in | std::fstream::out | std::fstream::app | std::fstream::binary);
+
+	string str1 = "thelongfiletestnametest1.txt";
+	string str2 = "filetest2.txt";
+
+	f.write(str1.c_str(), str1.size());
+	f.write("\0", sizeof(char));
+	f.write(str2.c_str(), str2.size());
+	f.write("\0", sizeof(char));
+
+	f.close();
+}

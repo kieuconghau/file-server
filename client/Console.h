@@ -50,3 +50,4 @@ void setColor(COLOR textColor, COLOR bgColor);
 void printConsole(COLOR textColor, COLOR bgColor, const unsigned int& x, const unsigned int& y, string content);
 void printTextAtMid(string const& text, size_t const& left, size_t const& right);
 string hidePassword();
+wstring s2ws(const std::string& s);

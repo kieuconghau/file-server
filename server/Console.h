@@ -7,6 +7,11 @@
 #include <sstream>
 #include <ctime>
 #include <conio.h>
+#include <windows.h>
+#include <corecrt_wstring.h>
+#include <fstream>
+#include <vector>
+#include <mutex>
 
 #pragma warning(disable:4996) // _CRT_SECURE_NO_WARNINGS
 
@@ -48,3 +53,4 @@ void FixSizeWindow(int width, int height);
 void setColor(COLOR textColor, COLOR bgColor);
 void printConsole(COLOR textColor, COLOR bgColor, const unsigned int& x, const unsigned int& y, string content);
 void printTextAtMid(string const& text, size_t const& left, size_t const& right);
+wstring s2ws(const std::string& s); // string to wstring
