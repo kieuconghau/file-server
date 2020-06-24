@@ -52,8 +52,8 @@ private:
 	/* ================ GUI ================ */
 	SELECTED selected;
 	unsigned int line_1; // line of Columm: Client
-	unsigned int line_2; // line of Columm : File Uploaded
-	unsigned int line_3; // line of Columm : History Log
+	unsigned int line_2; // line of Columm: File Uploaded
+	unsigned int line_3; // line of Columm: History Log
 
 	/* ================ PATH ================ */
 	std::string const DATABASE_PATH = "Sever_Database";			// .../Database/
@@ -68,9 +68,9 @@ private:
 	std::string LastError;
 
 private:
-	void InitDataBaseDirectory();
-	void InitUserList();
-	void InitFileNameList();
+	void initDataBaseDirectory();
+	void initUserList();
+	void initFileNameList();
 	
 
 	void initWinsock();

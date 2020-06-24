@@ -1,10 +1,10 @@
 #include "Program.h"
 
-void Program::InitFileList() {
+void Program::initFileList() {
 	
 }
 
-void Program::InitDataBaseDirectory() {
+void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
 		
 	}
@@ -22,8 +22,8 @@ Program::Program()
 	this->line_3 = 2;
 
 	//Init something you need
-	this->InitDataBaseDirectory();
-	this->InitFileList();
+	this->initDataBaseDirectory();
+	this->initFileList();
 	this->initWinsock();
 }
 

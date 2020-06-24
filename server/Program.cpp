@@ -11,9 +11,9 @@ Program::Program()
 	selected = SELECTED::ONLINE;
 
 	//Init something you need
-	this->InitDataBaseDirectory();
-	this->InitUserList();
-	this->InitFileNameList();
+	this->initDataBaseDirectory();
+	this->initUserList();
+	this->initFileNameList();
 	this->initWinsock();
 }
 
@@ -34,14 +34,14 @@ Program::~Program()
 	WSACleanup();
 }
 
-void Program::InitDataBaseDirectory() {
+void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
 		CreateDirectory(s2ws(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER).c_str(), NULL);
 	}
 	else return;
 }
 
-void Program::InitUserList() {
+void Program::initUserList() {
 	fstream f(DATABASE_PATH + "\\" + USER_FILE,
 		std::fstream::in | std::fstream::binary);
 
@@ -66,7 +66,7 @@ void Program::InitUserList() {
 	f.close();
 }
 
-void Program::InitFileNameList() {
+void Program::initFileNameList() {
 	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE,
 		std::fstream::in | std::fstream::binary);
 

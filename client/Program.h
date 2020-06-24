@@ -62,8 +62,8 @@ private:
 
 private:
 	/* ================ Init ================ */
-	void InitDataBaseDirectory();
-	void InitFileList();
+	void initDataBaseDirectory();
+	void initFileList();
 
 	void initWinsock();
 	void initConnectSocket();
