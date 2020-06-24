@@ -103,17 +103,16 @@ void Client::receiveMsg()
 	char* msg;
 
 	while (true) {
-		// Client shutdown check
-		iResult = recv(this->ConnectSocket, nullptr, 0, 0);
-		if (iResult == 0)
-			break;
-
 		// FLAG
 		iResult = recv(this->ConnectSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
+
+		// Check if the Server shutdowns
+		if (iResult == 0)
+			break;
 
 		// MSGLEN
 		iResult = recv(this->ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
