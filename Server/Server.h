@@ -42,12 +42,14 @@ private:
     std::vector<User*> OnlineUserList;
     std::vector<std::string> FileNameList;
 
-    std::string const DATABASE_PATH = "Database/";
-    std::string const  SHARED_FILES_FOLDER = "SharedFiles/";
-    std::string const LOG_FILE = "serverlog.txt";
-    std::string const SHARED_FILE_NAMES_FILE = "sharedfilenames.txt";
-    std::string const USERS_FILE = "users.bin";
-    // User structure in file: USERNAME_LEN | USERNAME | PWD_LEN | PWD
+    std::string const DATABASE_PATH = "Server_Database";
+    std::string const  SHARED_FILES_FOLDER = "SharedFiles";
+    std::string const LOG_FILE = "logfile.txt";
+    std::string const SHARED_FILE_NAMES_FILE = "filename.bin";
+    std::string const USERS_FILE = "user.bin";
+    
+    // filename: filename1\0filename2\0
+    // user: username\0password\0
 
     std::string LastError;
 
