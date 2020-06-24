@@ -113,23 +113,15 @@ void Server::loadUserAccountInfo() {
 	fin.seekg(0, ios::beg);
 
 	uint8_t fieldLength;
-	char* field;
+	string field;
 	while (fileLength > 0) {
 		User* pUser = new User;
 
-		fin.read((char*)&fieldLength, sizeof(fieldLength));
-		field = new char[fieldLength + 1];
-		memset(field, 0, fieldLength + 1);
-		fin.read((char*)field, fieldLength);
+		getline(fin, field, '\0');
 		pUser->Username = field;
-		delete[] field;
 
-		fin.read((char*)&fieldLength, sizeof(fieldLength));
-		field = new char[fieldLength + 1];
-		memset(field, 0, fieldLength + 1);
-		fin.read((char*)field, fieldLength);
+		getline(fin, field, '\0');
 		pUser->Password = field;
-		delete[] field;
 
 		UserList.push_back(pUser);
 
@@ -204,7 +196,7 @@ void Server::verifyUserRegistrationOrLogin(SOCKET socket) {
 
 void Server::addUserAccountInfo(string username, string password, SOCKET socket) {
 	ofstream fout;
-	fout.open(DatabasePath + UsersFile, ios::binary);
+	fout.open(DatabasePath + UsersFile, ios::app | ios::binary);
 	if (fout.is_open() == false) {
 		cout << "Failed to open user info file to write" << endl;
 		return;
@@ -217,15 +209,11 @@ void Server::addUserAccountInfo(string username, string password, SOCKET socket)
 	UserList.push_back(pUser);
 	OnlineUserList.push_back(pUser);
 
-	fout.seekp(ios::end);
+	fout.seekp(0, ios::end);
+	cout << "File size before writing: " << fout.tellp() << endl;
 
-	int fieldLength;
-	fieldLength = username.length();
-	fout.write((char*)&fieldLength, sizeof(fieldLength));
-	fout.write((char*)username.c_str(), fieldLength);
-	fieldLength = password.length();
-	fout.write((char*)&fieldLength, sizeof(fieldLength));
-	fout.write((char*)password.c_str(), fieldLength);
+	fout.write((char*)username.c_str(), username.length() + 1);
+	fout.write((char*)password.c_str(), password.length() + 1);
 
 	fout.close();
 }
