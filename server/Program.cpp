@@ -2,7 +2,7 @@
 
 Program::Program()
 {
-	this->test();
+	//this->test();
 	FixSizeWindow(110, 30);
 	FixConsoleWindow();
 
@@ -45,6 +45,9 @@ void Program::InitUserList() {
 	fstream f(DATABASE_PATH + "\\" + USER_FILE,
 		std::fstream::in | std::fstream::binary);
 
+	if (!f.is_open())
+		return;
+
 	while (true) {
 		User*    temp = new User;
 		
@@ -66,6 +69,9 @@ void Program::InitUserList() {
 void Program::InitFileNameList() {
 	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE,
 		std::fstream::in | std::fstream::binary);
+
+	if (!f.is_open())
+		return;
 
 	while (true) {
 		string str;
