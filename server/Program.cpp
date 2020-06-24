@@ -428,7 +428,10 @@ unsigned long Program::fileSizeBytes(string filename) {
 		return 0;
 	}
 
-	return f.tellg();
+	size_t fileSize = f.tellg();
+	f.close();
+
+	return fileSize;
 }
 
 void Program::run()
