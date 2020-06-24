@@ -65,11 +65,15 @@ private:
 	void initDataBaseDirectory();
 	void initFileList();
 
+	// Set up Client
 	void initWinsock();
 	void initConnectSocket();
-
 	void receiveMsg();
 
+	// Register
+	void registerAccount();
+
+	// Download File
 	void sendADownloadFileRequest(size_t const& fileIndex);
 	void receiveAFileFromServer(std::string const& downloadPath);
 

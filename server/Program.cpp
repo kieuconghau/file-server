@@ -98,6 +98,7 @@ void Program::initWinsock()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		this->LastError = "WSAStartup() failed with error: " + iResult;
+		cout << this->LastError << "\n";
 	}
 }
 
@@ -117,6 +118,7 @@ void Program::initListenSocket()
 	iResult = getaddrinfo(nullptr, (LPCSTR)&this->DEFAULT_PORT, &hints, &result);	// Update 'result' with port, IP address,...
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed with error: " + iResult;
+		cout << this->LastError << "\n";
 		return;
 	}
 
@@ -126,6 +128,7 @@ void Program::initListenSocket()
 
 	if (this->ListenSocket == INVALID_SOCKET) {
 		this->LastError = "socket() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		freeaddrinfo(result);
 		return;
 	}
@@ -135,6 +138,7 @@ void Program::initListenSocket()
 	iResult = bind(this->ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "bind() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		freeaddrinfo(result);
 		return;
 	}
@@ -146,6 +150,7 @@ void Program::initListenSocket()
 	iResult = listen(this->ListenSocket, SOMAXCONN);	// backlog = SOMAXCONN: the maximum length of the queue of pending connections to accept.
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "listen() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		return;
 	}
 }
@@ -159,6 +164,7 @@ void Program::acceptConnections()
 
 		if (acceptSocket == INVALID_SOCKET) {
 			this->LastError = "accept() failed: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			continue;
 		}
 
@@ -183,6 +189,7 @@ void Program::receiveMsg(User* user)
 		iResult = recv(user->AcceptSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -194,6 +201,7 @@ void Program::receiveMsg(User* user)
 		iResult = recv(user->AcceptSocket, (char*)&msgLen, sizeof(msgLen), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 		msg = new char[msgLen + 1];
@@ -202,6 +210,7 @@ void Program::receiveMsg(User* user)
 		iResult = recv(user->AcceptSocket, msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 		msg[msgLen] = '\0';
@@ -240,6 +249,7 @@ void Program::loadUserAccountInfo() {
 	fin.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::binary);
 	if (fin.is_open() == false) {
 		this->LastError = "Failed to open user info file to read";
+		cout << this->LastError << "\n";
 		return;
 	}
 
@@ -332,6 +342,7 @@ void Program::addUserAccountInfo(string username, string password, SOCKET socket
 	fout.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::app | ios::binary);
 	if (fout.is_open() == false) {
 		this->LastError = "Failed to open user info file to write";
+		cout << this->LastError << "\n";
 		return;
 	}
 
@@ -372,6 +383,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		iResult = send(user->AcceptSocket, (char*)&fileSize, sizeof(fileSize), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "send() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -381,6 +393,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 			iResult = send(user->AcceptSocket, buffer, this->BUFFER_LEN, 0);
 			if (iResult == SOCKET_ERROR) {
 				this->LastError = "send() failed with error: " + WSAGetLastError();
+				cout << this->LastError << "\n";
 				return;
 			}
 		}
@@ -389,6 +402,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		iResult = send(user->AcceptSocket, buffer, fileSize % this->BUFFER_LEN, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "send() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -397,6 +411,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 	}
 	else {
 		this->LastError = "Failed to open file " + this->getPathOfAFile(indexFile);
+		cout << this->LastError << "\n";
 	}
 }
 

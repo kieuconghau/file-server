@@ -45,6 +45,7 @@ void Program::initWinsock()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		this->LastError = "WSAStartup() failed with error: " + iResult;
+		cout << this->LastError << "\n";
 	}
 }
 
@@ -63,6 +64,7 @@ void Program::initConnectSocket()
 
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed: " + iResult;
+		cout << this->LastError << "\n";
 		return;
 	}
 
@@ -73,6 +75,7 @@ void Program::initConnectSocket()
 
 		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 			this->LastError = "socket() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -89,6 +92,7 @@ void Program::initConnectSocket()
 
 	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 		this->LastError = "Error at socket(): " + WSAGetLastError();
+		cout << this->LastError << "\n";
 	}
 
 	freeaddrinfo(result);
@@ -109,6 +113,7 @@ void Program::receiveMsg()
 		iResult = recv(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -120,6 +125,7 @@ void Program::receiveMsg()
 		iResult = recv(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 		msg = new uint8_t[msgLen + 1];
@@ -128,6 +134,7 @@ void Program::receiveMsg()
 		iResult = recv(this->UserInfo.ConnectSocket, (char*)msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 		msg[msgLen] = '\0';
@@ -141,7 +148,7 @@ void Program::receiveMsg()
 			// ...
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE:
-			
+			// ... Input a download path here
 			this->receiveAFileFromServer("G:/KCH/");
 			break;
 		case RcvMsgFlag::LOGOUT:
@@ -153,6 +160,57 @@ void Program::receiveMsg()
 
 		delete[] msg;
 		msg = nullptr;
+	}
+}
+
+void Program::registerAccount() {
+	string username;
+	string password;
+	uint8_t flag; // Placeholder
+	uint64_t msgLen;
+	char* msg;
+	bool result = false;
+
+	while (result == false) {
+		cout << "Username: ";	getline(cin, username);
+		cout << "Password: ";	getline(cin, password);
+
+		// Send account info for registration
+		flag = 0; // Placeholder
+		send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
+		msgLen = username.length();
+		send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+		send(this->UserInfo.ConnectSocket, (char*)username.c_str(), msgLen, 0);
+		flag = 2; // Placeholder
+		send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
+		msgLen = password.length();
+		send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+		send(this->UserInfo.ConnectSocket, (char*)password.c_str(), msgLen, 0);
+
+		// Receive server's response
+		recv(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
+
+		switch (flag) {
+		case 0:	// Placeholder	// Registration failed
+		{
+			recv(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+			msg = new char[msgLen + 1];
+			memset(msg, 0, msgLen + 1);
+			recv(this->UserInfo.ConnectSocket, (char*)msg, msgLen, 0);
+			cout << "Registration failed." << endl;
+			cout << msg << endl;
+			delete[] msg;
+			break;
+		}
+		case 1:	// Placeholder	// Registration succeeded
+		{
+			cout << "Registration succeeded." << endl;
+			result = true;
+			break;
+		}
+		default:
+			cout << "Illegal flag. Something went wrong..." << endl;
+		}
 	}
 }
 
@@ -173,18 +231,21 @@ void Program::sendADownloadFileRequest(size_t const& fileIndex)
 	iResult = send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		return;
 	}
 
 	iResult = send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		return;
 	}
 
 	iResult = send(this->UserInfo.ConnectSocket, msg.c_str(), msgLen, 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
+		cout << this->LastError << "\n";
 		return;
 	}
 }
@@ -203,6 +264,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 		iResult = recv(this->UserInfo.ConnectSocket, (char*)&fileSize, sizeof(fileSize), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 		
@@ -212,6 +274,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 			iResult = send(this->UserInfo.ConnectSocket, buffer, this->BUFFER_LEN, 0);
 			if (iResult == SOCKET_ERROR) {
 				this->LastError = "recv() failed with error: " + WSAGetLastError();
+				cout << this->LastError << "\n";
 				return;
 			}
 		}
@@ -220,6 +283,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 		iResult = send(this->UserInfo.ConnectSocket, buffer, fileSize % this->BUFFER_LEN, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			cout << this->LastError << "\n";
 			return;
 		}
 
@@ -228,6 +292,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 	}
 	else {
 		this->LastError = "Unable to open file " + downloadPath;
+		cout << this->LastError << "\n";
 	}
 }
 
