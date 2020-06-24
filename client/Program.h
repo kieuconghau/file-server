@@ -68,17 +68,25 @@ private:
 	// Set up Client
 	void initWinsock();
 	void initConnectSocket();
+	
+	// Transfer
 	void receiveMsg();
+	void sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen);
+	
+	int receiveData(char* buffer, size_t const& len);
+	int sendData(char* buffer, size_t const& len);
 
 	// Register
 	void registerAccount();
 
 	// Download File
-	void downloadFile(size_t const& fileIndex, std::string const& downloadPath);
-	void sendADownloadFileRequest(size_t const& fileIndex);
+	void downloadFile(size_t const& fileIndex);
 	void receiveAFileFromServer(std::string const& downloadPath);
 
+	// Handle error
+	void printError();
 
+	// ...
 	void homeScreen();
 
 	void printTitle();

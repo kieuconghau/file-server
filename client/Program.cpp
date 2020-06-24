@@ -45,7 +45,7 @@ void Program::initWinsock()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		this->LastError = "WSAStartup() failed with error: " + iResult;
-		cout << this->LastError << "\n";
+		this->printError();
 	}
 }
 
@@ -64,7 +64,7 @@ void Program::initConnectSocket()
 
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed: " + iResult;
-		cout << this->LastError << "\n";
+		this->printError();
 		return;
 	}
 
@@ -75,7 +75,7 @@ void Program::initConnectSocket()
 
 		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 			this->LastError = "socket() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
+			this->printError();
 			return;
 		}
 
@@ -92,7 +92,7 @@ void Program::initConnectSocket()
 
 	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 		this->LastError = "Error at socket(): " + WSAGetLastError();
-		cout << this->LastError << "\n";
+		this->printError();
 	}
 
 	freeaddrinfo(result);
@@ -102,58 +102,49 @@ void Program::receiveMsg()
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (uint8_t*) */
 
-	int iResult;
+	int shutdownFlag;
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
 	uint8_t* msg;
 
 	while (true) {
-		// FLAG
-		iResult = recv(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
-		if (iResult == SOCKET_ERROR) {
-			this->LastError = "recv() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
-			return;
-		}
-
-		// Check if the Server shutdowns
-		if (iResult == 0)
+		shutdownFlag = this->receiveData((char*)&flag, sizeof(flag));
+		if (shutdownFlag == 0)	// Check if the Server shutdowns
 			break;
 
-		// MSGLEN
-		iResult = recv(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
-		if (iResult == SOCKET_ERROR) {
-			this->LastError = "recv() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
-			return;
-		}
+		this->receiveData((char*)&msgLen, sizeof(msgLen));
 		msg = new uint8_t[msgLen + 1];
 
-		// MSG
-		iResult = recv(this->UserInfo.ConnectSocket, (char*)msg, msgLen, 0);
-		if (iResult == SOCKET_ERROR) {
-			this->LastError = "recv() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
-			return;
-		}
+		this->receiveData((char*)msg, msgLen);
 		msg[msgLen] = '\0';
 
 		switch (flag)
 		{
-		case RcvMsgFlag::FAIL:
+		case RcvMsgFlag::FAIL: {
 			// ...
+
 			break;
-		case RcvMsgFlag::SUCCESS:
+		}
+		case RcvMsgFlag::SUCCESS: {
 			// ...
+
 			break;
-		case RcvMsgFlag::DOWNLOAD_FILE:
+		}
+		case RcvMsgFlag::DOWNLOAD_FILE: {
+			std::string downloadPath;
+			
 			// ... Input a download path here
-			this->receiveAFileFromServer("G:/KCH/");
+
+			this->receiveAFileFromServer(downloadPath);
+
 			break;
-		case RcvMsgFlag::LOGOUT:
+		}
+		case RcvMsgFlag::LOGOUT: {
 			// ...
+
 			break;
+		}
 		default:
 			break;
 		}
@@ -161,6 +152,39 @@ void Program::receiveMsg()
 		delete[] msg;
 		msg = nullptr;
 	}
+}
+
+void Program::sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen)
+{
+	this->sendData((char*)&flag, sizeof(flag));
+	this->sendData((char*)&msgLen, sizeof(msgLen));
+	this->sendData(msg, msgLen);
+}
+
+int Program::receiveData(char* buffer, size_t const& len)
+{
+	int iResult;
+
+	iResult = recv(this->UserInfo.ConnectSocket, buffer, len, 0);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "recv() failed with error: " + WSAGetLastError();
+		this->printError();
+	}
+
+	return iResult;
+}
+
+int Program::sendData(char* buffer, size_t const& len)
+{
+	int iResult;
+
+	iResult = send(this->UserInfo.ConnectSocket, buffer, len, 0);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "send() failed with error: " + WSAGetLastError();
+		this->printError();
+	}
+
+	return iResult;
 }
 
 void Program::registerAccount() {
@@ -214,46 +238,18 @@ void Program::registerAccount() {
 	}
 }
 
-void Program::downloadFile(size_t const& fileIndex, std::string const& downloadPath)
-{
-	this->sendADownloadFileRequest(fileIndex);
-	this->receiveAFileFromServer(downloadPath);
-}
-
-void Program::sendADownloadFileRequest(size_t const& fileIndex)
+void Program::downloadFile(size_t const& fileIndex)
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (string) */
 
-	int iResult;
+	// Send a request to the Server first.
+	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
+	std::string msg = std::to_string(fileIndex);
+	uint64_t msgLen = msg.length();
 
-	SendMsgFlag flag;
-	uint64_t msgLen;
-	std::string msg;
+	this->sendMsg(flag, (char*)msg.c_str(), msgLen);
 
-	flag = SendMsgFlag::DOWNLOAD_FILE;
-	msg = std::to_string(fileIndex);
-	msgLen = msg.length();             
-
-	iResult = send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
-	if (iResult == SOCKET_ERROR) {
-		this->LastError = "send() failed with error: " + WSAGetLastError();
-		cout << this->LastError << "\n";
-		return;
-	}
-
-	iResult = send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
-	if (iResult == SOCKET_ERROR) {
-		this->LastError = "send() failed with error: " + WSAGetLastError();
-		cout << this->LastError << "\n";
-		return;
-	}
-
-	iResult = send(this->UserInfo.ConnectSocket, msg.c_str(), msgLen, 0);
-	if (iResult == SOCKET_ERROR) {
-		this->LastError = "send() failed with error: " + WSAGetLastError();
-		cout << this->LastError << "\n";
-		return;
-	}
+	// Then, waiting for a reply from the Server and receive file.
 }
 
 void Program::receiveAFileFromServer(std::string const& downloadPath)
@@ -267,39 +263,30 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 		char* buffer = new char[this->BUFFER_LEN];
 
 		// Receive file's size
-		iResult = recv(this->UserInfo.ConnectSocket, (char*)&fileSize, sizeof(fileSize), 0);
-		if (iResult == SOCKET_ERROR) {
-			this->LastError = "recv() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
-			return;
-		}
+		this->receiveData((char*)&fileSize, sizeof(fileSize));
 		
 		// Receive file's data
 		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			fout.write(buffer, this->BUFFER_LEN);
-			iResult = send(this->UserInfo.ConnectSocket, buffer, this->BUFFER_LEN, 0);
-			if (iResult == SOCKET_ERROR) {
-				this->LastError = "recv() failed with error: " + WSAGetLastError();
-				cout << this->LastError << "\n";
-				return;
-			}
+			this->receiveData(buffer, this->BUFFER_LEN);
 		}
 
 		fout.write(buffer, fileSize % this->BUFFER_LEN);
-		iResult = send(this->UserInfo.ConnectSocket, buffer, fileSize % this->BUFFER_LEN, 0);
-		if (iResult == SOCKET_ERROR) {
-			this->LastError = "recv() failed with error: " + WSAGetLastError();
-			cout << this->LastError << "\n";
-			return;
-		}
+		this->receiveData(buffer, fileSize % this->BUFFER_LEN);
 
+		// Release resources
 		delete[] buffer;
 		fout.close();
 	}
 	else {
 		this->LastError = "Unable to open file " + downloadPath;
-		cout << this->LastError << "\n";
+		this->printError();
 	}
+}
+
+void Program::printError()
+{
+	this->printError();
 }
 
 

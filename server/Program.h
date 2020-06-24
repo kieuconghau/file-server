@@ -77,7 +77,13 @@ private:
 	void initWinsock();
 	void initListenSocket();
 	void acceptConnections();
+	
+	// Transfer
 	void receiveMsg(User* user);
+	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg);
+
+	int receiveData(User* user, char* buffer, size_t const& len);
+	int sendData(User* user, char* buffer, size_t const& len);
 
 	// Register
 	void loadUserAccountInfo();
@@ -88,7 +94,10 @@ private:
 	void sendAFileToClient(std::string const& indexFile_str, User* user);
 	std::string getPathOfAFile(size_t const& indexFile);
 
+	// Handle error
+	void printError();
 
+	// ...
 	unsigned long fileSizeBytes(string filename);
 	string toStringFileSize(string filename);
 	string shortenFileName(string filename);
