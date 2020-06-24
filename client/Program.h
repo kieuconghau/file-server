@@ -48,6 +48,8 @@ private:
 
 	std::vector<File> FileList;
 
+	uint16_t const BUFFER_LEN = 4096;
+
 	std::string const DATABASE_PATH = "Client_Database";
 	std::string const LOG_FILE = "logfile.txt";
 
@@ -69,7 +71,7 @@ private:
 	void receiveMsg();
 
 	void sendADownloadFileRequest(size_t const& fileIndex);
-	void receiveAFileFromServer();
+	void receiveAFileFromServer(std::string const& downloadPath);
 
 
 	void homeScreen();

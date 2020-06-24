@@ -241,18 +241,26 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 
 	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
 
-	std::ifstream fout(this->getPathOfAFile(indexFile), std::ios_base::binary);
+	std::ifstream fin(this->getPathOfAFile(indexFile), std::ios_base::binary);
 
-	if (fout.is_open()) {
+	if (fin.is_open()) {
 		int iResult;
 		size_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
-		fout.seekg(std::ios_base::end);
-		fileSize = fout.gcount();
+		fin.seekg(std::ios_base::end);
+		fileSize = fin.gcount();
 
+		// Send file's size
+		iResult = send(user->AcceptSocket, (char*)&fileSize, sizeof(fileSize), 0);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "send() failed with error: " + WSAGetLastError();
+			return;
+		}
+
+		// Send file's data
 		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
-			fout.read(buffer, this->BUFFER_LEN);
+			fin.read(buffer, this->BUFFER_LEN);
 			iResult = send(user->AcceptSocket, buffer, this->BUFFER_LEN, 0);
 			if (iResult == SOCKET_ERROR) {
 				this->LastError = "send() failed with error: " + WSAGetLastError();
@@ -260,7 +268,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 			}
 		}
 
-		fout.read(buffer, fileSize % this->BUFFER_LEN);
+		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		iResult = send(user->AcceptSocket, buffer, fileSize % this->BUFFER_LEN, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "send() failed with error: " + WSAGetLastError();
@@ -268,7 +276,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		}
 
 		delete[] buffer;
-		fout.close();
+		fin.close();
 	}
 }
 

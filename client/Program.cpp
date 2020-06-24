@@ -141,7 +141,8 @@ void Program::receiveMsg()
 			// ...
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE:
-			this->receiveAFileFromServer();
+			
+			this->receiveAFileFromServer("G:/KCH/");
 			break;
 		case RcvMsgFlag::LOGOUT:
 			// ...
@@ -188,9 +189,46 @@ void Program::sendADownloadFileRequest(size_t const& fileIndex)
 	}
 }
 
-void Program::receiveAFileFromServer()
+void Program::receiveAFileFromServer(std::string const& downloadPath)
 {
-	// ...
+	std::ofstream fout(downloadPath, std::ios_base::binary);
+
+	if (fout.is_open()) {
+		int iResult;
+		
+		size_t fileSize;
+		char* buffer = new char[this->BUFFER_LEN];
+
+		// Receive file's size
+		iResult = recv(this->UserInfo.ConnectSocket, (char*)&fileSize, sizeof(fileSize), 0);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			return;
+		}
+		
+		// Receive file's data
+		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
+			fout.write(buffer, this->BUFFER_LEN);
+			iResult = send(this->UserInfo.ConnectSocket, buffer, this->BUFFER_LEN, 0);
+			if (iResult == SOCKET_ERROR) {
+				this->LastError = "recv() failed with error: " + WSAGetLastError();
+				return;
+			}
+		}
+
+		fout.write(buffer, fileSize % this->BUFFER_LEN);
+		iResult = send(this->UserInfo.ConnectSocket, buffer, fileSize % this->BUFFER_LEN, 0);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "recv() failed with error: " + WSAGetLastError();
+			return;
+		}
+
+		delete[] buffer;
+		fout.close();
+	}
+	else {
+		this->LastError = "Unable to open file " + downloadPath;
+	}
 }
 
 
