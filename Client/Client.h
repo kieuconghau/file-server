@@ -4,11 +4,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <iostream>
-#include <string>
+#include "User.h"
+#include "File.h"
+
+#include <vector>
 #include <thread>
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -40,10 +39,12 @@ public:
     void run();
 
 private:
-    SOCKET ConnectSocket;
+    User UserInfo;
 
     std::string ServerIP;
     std::string ServerPort;
+
+    std::vector<File> FileList;
 
     std::string const DATABASE_PATH = "Client_Database";
     std::string const LOG_FILE = "logfile.txt";
@@ -56,11 +57,9 @@ private:
     
     void initConnectSocket();
 
-    void transmitMsg();
-
-    void sendMsg();
     void receiveMsg();
 
+    void sendADownloadFileRequest(size_t const& fileIndex);
     void receiveAFileFromServer();
 };
 

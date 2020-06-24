@@ -77,30 +77,15 @@ void Client::initConnectSocket()
 	freeaddrinfo(result);
 }
 
-void Client::transmitMsg()
-{
-	std::thread sendMsgThread(&Client::sendMsg, this);
-	std::thread receiveMsgThread(&Client::receiveMsg, this);
-
-	// How to pass this while(true)?
-	// ...
-	while (true);
-}
-
-void Client::sendMsg()
-{
-	// ...
-}
-
 void Client::receiveMsg()
 {
-	/* Message structure: FLAG (1 byte) | MSGLEN (64 byte) | MSG */
+	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (uint8_t*) */
 
 	int iResult;
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
-	char* msg;
+	uint8_t* msg;
 
 	while (true) {
 		// FLAG
@@ -120,10 +105,10 @@ void Client::receiveMsg()
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
 		}
-		msg = new char[msgLen + 1];
+		msg = new uint8_t[msgLen + 1];
 
 		// MSG
-		iResult = recv(this->ConnectSocket, msg, msgLen, 0);
+		iResult = recv(this->ConnectSocket, (char*)msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
@@ -150,6 +135,39 @@ void Client::receiveMsg()
 
 		delete[] msg;
 		msg = nullptr;
+	}
+}
+
+void Client::sendADownloadFileRequest(size_t const& fileIndex)
+{
+	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (uint64_t) */
+
+	int iResult;
+
+	SendMsgFlag flag;
+	uint64_t msgLen;
+	uint64_t msg;
+
+	flag = SendMsgFlag::DOWNLOAD_FILE;
+	msgLen = sizeof(msg);
+	msg = fileIndex;
+
+	iResult = send(this->ConnectSocket, (char*)&flag, sizeof(flag), 0);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "send() failed with error: " + WSAGetLastError();
+		return;
+	}
+
+	iResult = send(this->ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "send() failed with error: " + WSAGetLastError();
+		return;
+	}
+
+	iResult = send(this->ConnectSocket, (char*)&msg, msgLen, 0);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "send() failed with error: " + WSAGetLastError();
+		return;
 	}
 }
 
