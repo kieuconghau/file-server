@@ -1,16 +1,5 @@
 #include "Program.h"
 
-void Program::initFileList() {
-	
-}
-
-void Program::initDataBaseDirectory() {
-	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
-		
-	}
-	else return;
-}
-
 Program::Program()
 {
 	FixSizeWindow(110, 30);
@@ -41,6 +30,17 @@ void Program::run()
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
 	rcvMsgThread.join();
+}
+
+void Program::initDataBaseDirectory() {
+	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
+
+	}
+	else return;
+}
+
+void Program::initFileList() {
+
 }
 
 void Program::initWinsock()
@@ -434,7 +434,7 @@ string Program::enterPath() {
 
 void Program::printTitle() {
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
-	gotoXY(30, 1); printSpace(8); cout << "File Uploaded"; printSpace(8); 
+	gotoXY(30, 1); printSpace(8); cout << "File Shared"; printSpace(8); 
 	
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
 	cout << "|"; 
@@ -555,6 +555,8 @@ void Program::navigateClient() {
 					// CSOCKET login
 					printLog("Login success.");
 				}
+
+				this->printStatus();
 
 				printLog("Conected to server.");
 				break;

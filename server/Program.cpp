@@ -547,7 +547,7 @@ void Program::homeScreen() {
 
 	gotoXY(0, 1);
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
-	printSpace(11); cout << "Clients"; printSpace(11); cout << "|"; printSpace(8); cout << "File Uploaded"; printSpace(8); cout << "|"; printSpace(20); cout << "History Log"; printSpace(19);
+	printSpace(11); cout << "Clients"; printSpace(11); cout << "|"; printSpace(8); cout << "File Shared"; printSpace(8); cout << "|"; printSpace(20); cout << "History Log"; printSpace(19);
 
 	printStatus();
 
@@ -615,9 +615,9 @@ string Program::toStringFileSize(string filename) {
 }
 
 string Program::shortenFileName(string filename) {
-	if (filename.length() > 20) {
-		string str1 = filename.substr(0, 10);
-		string str2 = filename.substr(filename.length() - 7, 7);
+	if (filename.length() > 18) {
+		string str1 = filename.substr(0, 9);
+		string str2 = filename.substr(filename.length() - 6, 6);
 		filename = str1 + "..." + str2;
 	}
 
