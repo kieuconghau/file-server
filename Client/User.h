@@ -14,7 +14,7 @@
 
 class User
 {
-    friend class Server;
+    friend class Client;
 public:
     User();
     User(SOCKET const& connectSocket);

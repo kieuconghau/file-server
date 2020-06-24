@@ -49,28 +49,28 @@ void Client::initConnectSocket()
 		return;
 	}
 
-	this->ConnectSocket = INVALID_SOCKET;
+	this->UserInfo.ConnectSocket = INVALID_SOCKET;
 
 	for (auto ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-		this->ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+		this->UserInfo.ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 		
-		if (this->ConnectSocket == INVALID_SOCKET) {
+		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 			this->LastError = "socket() failed with error: " + WSAGetLastError();
 			return;
 		}
 
-		iResult = connect(this->ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+		iResult = connect(this->UserInfo.ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 		
 		if (iResult == SOCKET_ERROR) {
-			closesocket(this->ConnectSocket);
-			this->ConnectSocket = INVALID_SOCKET;
+			closesocket(this->UserInfo.ConnectSocket);
+			this->UserInfo.ConnectSocket = INVALID_SOCKET;
 			continue;
 		}
 
 		break;
 	}
 
-	if (this->ConnectSocket == INVALID_SOCKET) {
+	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 		this->LastError = "Error at socket(): " + WSAGetLastError();
 	}
 
@@ -89,7 +89,7 @@ void Client::receiveMsg()
 
 	while (true) {
 		// FLAG
-		iResult = recv(this->ConnectSocket, (char*)&flag, sizeof(flag), 0);
+		iResult = recv(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
@@ -100,7 +100,7 @@ void Client::receiveMsg()
 			break;
 
 		// MSGLEN
-		iResult = recv(this->ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+		iResult = recv(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
@@ -108,7 +108,7 @@ void Client::receiveMsg()
 		msg = new uint8_t[msgLen + 1];
 
 		// MSG
-		iResult = recv(this->ConnectSocket, (char*)msg, msgLen, 0);
+		iResult = recv(this->UserInfo.ConnectSocket, (char*)msg, msgLen, 0);
 		if (iResult == SOCKET_ERROR) {
 			this->LastError = "recv() failed with error: " + WSAGetLastError();
 			return;
@@ -152,19 +152,19 @@ void Client::sendADownloadFileRequest(size_t const& fileIndex)
 	msgLen = sizeof(msg);
 	msg = fileIndex;
 
-	iResult = send(this->ConnectSocket, (char*)&flag, sizeof(flag), 0);
+	iResult = send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
 		return;
 	}
 
-	iResult = send(this->ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
+	iResult = send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
 		return;
 	}
 
-	iResult = send(this->ConnectSocket, (char*)&msg, msgLen, 0);
+	iResult = send(this->UserInfo.ConnectSocket, (char*)&msg, msgLen, 0);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "send() failed with error: " + WSAGetLastError();
 		return;
