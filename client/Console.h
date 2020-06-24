@@ -55,6 +55,6 @@ void FixConsoleWindow();
 void FixSizeWindow(int width, int height);
 void setColor(COLOR textColor, COLOR bgColor);
 void printConsole(COLOR textColor, COLOR bgColor, const unsigned int& x, const unsigned int& y, string content);
-void printTextAtMid(string const& text, size_t const& left, size_t const& right);
+void printTextAtMid(string const& text, uint64_t const& left, uint64_t const& right);
 string hidePassword();
 wstring s2ws(const std::string& s);

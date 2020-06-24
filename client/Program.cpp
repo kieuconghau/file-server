@@ -21,20 +21,26 @@ Program::Program()
 	this->line_2 = 0;
 	this->line_3 = 2;
 
-	//Init something you need
+	// Init something you need
 	this->initDataBaseDirectory();
 	this->initFileList();
-	this->initWinsock();
 }
 
 Program::~Program()
 {
-	//Del things you init
+	// ...
 }
 
 void Program::run()
 {
-	this->homeScreen();
+	std::thread userInteractThread(&Program::homeScreen, this);
+	userInteractThread.detach();
+
+	this->initWinsock();
+	this->initConnectSocket();
+
+	std::thread rcvMsgThread(&Program::receiveMsg, this);
+	rcvMsgThread.join();
 }
 
 void Program::initWinsock()
@@ -44,7 +50,7 @@ void Program::initWinsock()
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		this->LastError = "WSAStartup() failed with error: " + iResult;
+		this->LastError = "WSAStartup() failed with error: " + std::to_string(iResult);
 		this->printError();
 	}
 }
@@ -60,10 +66,10 @@ void Program::initConnectSocket()
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	iResult = getaddrinfo((PCSTR)&this->ServerIP, (PCSTR)&this->ServerPort, &hints, &result);	// Update 'result' with port, IP address,...
+	iResult = getaddrinfo(this->ServerIP, this->SERVER_PORT, &hints, &result);	// Update 'result' with port, IP address,...
 
 	if (iResult != 0) {
-		this->LastError = "getaddrinfo() failed: " + iResult;
+		this->LastError = "getaddrinfo() failed: " + std::to_string(iResult);
 		this->printError();
 		return;
 	}
@@ -74,7 +80,7 @@ void Program::initConnectSocket()
 		this->UserInfo.ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
 		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
-			this->LastError = "socket() failed with error: " + WSAGetLastError();
+			this->LastError = "socket() failed with error: " + std::to_string(WSAGetLastError());
 			this->printError();
 			return;
 		}
@@ -91,7 +97,7 @@ void Program::initConnectSocket()
 	}
 
 	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
-		this->LastError = "Error at socket(): " + WSAGetLastError();
+		this->LastError = "Error at socket(): " + std::to_string(WSAGetLastError());
 		this->printError();
 	}
 
@@ -100,13 +106,13 @@ void Program::initConnectSocket()
 
 void Program::receiveMsg()
 {
-	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (uint8_t*) */
+	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (char*) */
 
 	int shutdownFlag;
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
-	uint8_t* msg;
+	char* msg;
 
 	while (true) {
 		shutdownFlag = this->receiveData((char*)&flag, sizeof(flag));
@@ -114,9 +120,9 @@ void Program::receiveMsg()
 			break;
 
 		this->receiveData((char*)&msgLen, sizeof(msgLen));
-		msg = new uint8_t[msgLen + 1];
+		msg = new char[msgLen + 1];
 
-		this->receiveData((char*)msg, msgLen);
+		this->receiveData(msg, msgLen);
 		msg[msgLen] = '\0';
 
 		switch (flag)
@@ -132,12 +138,8 @@ void Program::receiveMsg()
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
-			std::string downloadPath;
-			
-			// ... Input a download path here
-
-			this->receiveAFileFromServer(downloadPath);
-
+			std::string downloadPath = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
+			this->receiveADownloadFileReply(downloadPath);
 			break;
 		}
 		case RcvMsgFlag::LOGOUT: {
@@ -161,26 +163,26 @@ void Program::sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen
 	this->sendData(msg, msgLen);
 }
 
-int Program::receiveData(char* buffer, size_t const& len)
+int Program::receiveData(char* buffer, uint64_t const& len)
 {
 	int iResult;
 
 	iResult = recv(this->UserInfo.ConnectSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "recv() failed with error: " + WSAGetLastError();
+		this->LastError = "recv() failed with error: " + std::to_string(WSAGetLastError());
 		this->printError();
 	}
 
 	return iResult;
 }
 
-int Program::sendData(char* buffer, size_t const& len)
+int Program::sendData(char* buffer, uint64_t const& len)
 {
 	int iResult;
 
 	iResult = send(this->UserInfo.ConnectSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "send() failed with error: " + WSAGetLastError();
+		this->LastError = "send() failed with error: " + std::to_string(WSAGetLastError());
 		this->printError();
 	}
 
@@ -238,7 +240,7 @@ void Program::registerAccount() {
 	}
 }
 
-void Program::downloadFile(size_t const& fileIndex)
+void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (string) */
 
@@ -252,7 +254,7 @@ void Program::downloadFile(size_t const& fileIndex)
 	// Then, waiting for a reply from the Server and receive file.
 }
 
-void Program::receiveAFileFromServer(std::string const& downloadPath)
+void Program::receiveADownloadFileReply(std::string const& downloadPath)
 {
 	std::ofstream fout(downloadPath, std::ios_base::binary);
 
@@ -266,13 +268,13 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 		this->receiveData((char*)&fileSize, sizeof(fileSize));
 		
 		// Receive file's data
-		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
-			fout.write(buffer, this->BUFFER_LEN);
+		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			this->receiveData(buffer, this->BUFFER_LEN);
+			fout.write(buffer, this->BUFFER_LEN);
 		}
 
-		fout.write(buffer, fileSize % this->BUFFER_LEN);
 		this->receiveData(buffer, fileSize % this->BUFFER_LEN);
+		fout.write(buffer, fileSize % this->BUFFER_LEN);
 
 		// Release resources
 		delete[] buffer;
@@ -286,7 +288,7 @@ void Program::receiveAFileFromServer(std::string const& downloadPath)
 
 void Program::printError()
 {
-	this->printError();
+	cout << this->LastError << "\n";
 }
 
 
@@ -302,8 +304,6 @@ void Program::homeScreen() {
 		line_2++;
 	}
 	line_2 = 2;
-	
-	
 	
 	this->navigateMode();
 }
@@ -389,8 +389,7 @@ void Program::navigateMode() {
 
 				if (selected == SELECTED::DOWNLOAD) {
 					if (FileList.size() > 0) {
-						this->enterPath();
-						//CSocket DOWNLOAD file
+						this->sendADownloadFileRequest(this->line_2);
 					}
 				}
 
@@ -427,7 +426,7 @@ string Program::enterPath() {
 
 	gotoXY(41, 0);
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
-	cin >> path;
+	getline(cin, path);
 
 	gotoXY(41, 0); printSpace(69);
 	return path;
@@ -566,13 +565,15 @@ void Program::navigateClient() {
 }
 
 void Program::loginClient() {
+	std::string input;
+
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> this->ServerIP;
+	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);	this->ServerIP = input.c_str();
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
 
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 12); cout << "Username: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);					  cin >> UserInfo.Username;
+	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, this->UserInfo.Username);
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 12); cout << "Username: ";
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 13); cout << "Password: ";

@@ -39,7 +39,7 @@ public:
 
 private:
 	SOCKET ListenSocket;
-	std::string const DEFAULT_PORT = "27015";	// ... Random
+	LPCSTR const DEFAULT_PORT = "27015";
 
 	std::mutex MutexUpload;
 
@@ -82,8 +82,8 @@ private:
 	void receiveMsg(User* user);
 	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg);
 
-	int receiveData(User* user, char* buffer, size_t const& len);
-	int sendData(User* user, char* buffer, size_t const& len);
+	int receiveData(User* user, char* buffer, uint64_t const& len);
+	int sendData(User* user, char* buffer, uint64_t const& len);
 
 	// Register
 	void loadUserAccountInfo();
@@ -92,10 +92,10 @@ private:
 
 	// Download File
 	void sendAFileToClient(std::string const& indexFile_str, User* user);
-	std::string getPathOfAFile(size_t const& indexFile);
+	std::string getPathOfAFile(uint64_t const& indexFile);
 
 	// Handle error
-	void printError();
+	void printLastError();
 
 	// ...
 	unsigned long fileSizeBytes(string filename);

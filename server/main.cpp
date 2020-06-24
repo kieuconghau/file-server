@@ -3,4 +3,6 @@
 int main() {
 	Program Server;
 	Server.run();
+
+	return 0;
 }

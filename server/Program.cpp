@@ -14,19 +14,18 @@ Program::Program()
 	this->initDataBaseDirectory();
 	this->initUserList();
 	this->initFileNameList();
-	this->initWinsock();
 }
 
 Program::~Program()
 {
 	closesocket(this->ListenSocket);
 
-	for (size_t i = 0; i < this->UserList.size(); ++i) {
+	for (uint64_t i = 0; i < this->UserList.size(); ++i) {
 		delete this->UserList[i];
 		this->UserList[i] = nullptr;
 	}
 
-	for (int i = 0; i < FileNameList.size(); i++) {
+	for (int i = 0; i < FileNameList.size(); i++) {		// ???
 		delete& this->FileNameList[i];
 	}
 
@@ -38,7 +37,6 @@ void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
 		CreateDirectory(s2ws(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER).c_str(), NULL);
 	}
-	else return;
 }
 
 void Program::initUserList() {
@@ -97,8 +95,8 @@ void Program::initWinsock()
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		this->LastError = "WSAStartup() failed with error: " + iResult;
-		this->printError();
+		this->LastError = "WSAStartup() failed with error: " + std::to_string(iResult);
+		this->printLastError();
 	}
 }
 
@@ -115,10 +113,10 @@ void Program::initListenSocket()
 	hints.ai_protocol = IPPROTO_TCP;	// The Transmission Control Protocol (TCP).
 	hints.ai_flags = AI_PASSIVE;		// The socket address will be used in a call to the bindfunction.
 
-	iResult = getaddrinfo(nullptr, (LPCSTR)&this->DEFAULT_PORT, &hints, &result);	// Update 'result' with port, IP address,...
+	iResult = getaddrinfo(nullptr, this->DEFAULT_PORT, &hints, &result);	// Update 'result' with port, IP address,...
 	if (iResult != 0) {
-		this->LastError = "getaddrinfo() failed with error: " + iResult;
-		this->printError();
+		this->LastError = "getaddrinfo() failed with error: " + std::to_string(iResult);
+		this->printLastError();
 		return;
 	}
 
@@ -127,8 +125,8 @@ void Program::initListenSocket()
 	this->ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
 	if (this->ListenSocket == INVALID_SOCKET) {
-		this->LastError = "socket() failed with error: " + WSAGetLastError();
-		this->printError();
+		this->LastError = "socket() failed with error: " + std::to_string(WSAGetLastError());
+		this->printLastError();
 		freeaddrinfo(result);
 		return;
 	}
@@ -137,8 +135,8 @@ void Program::initListenSocket()
 	// (The IP address and port are retrieved from the variable 'result', which has been updated after the execution of the function 'getaddrinfo'.)
 	iResult = bind(this->ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "bind() failed with error: " + WSAGetLastError();
-		this->printError();
+		this->LastError = "bind() failed with error: " + std::to_string(WSAGetLastError());
+		this->printLastError();
 		freeaddrinfo(result);
 		return;
 	}
@@ -149,8 +147,8 @@ void Program::initListenSocket()
 	// Let the socket which has already bind (ListenSocket) listen to all connections from Clients.
 	iResult = listen(this->ListenSocket, SOMAXCONN);	// backlog = SOMAXCONN: the maximum length of the queue of pending connections to accept.
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "listen() failed with error: " + WSAGetLastError();
-		this->printError();
+		this->LastError = "listen() failed with error: " + std::to_string(WSAGetLastError());
+		this->printLastError();
 		return;
 	}
 }
@@ -163,8 +161,8 @@ void Program::acceptConnections()
 		acceptSocket = accept(this->ListenSocket, nullptr, nullptr);
 
 		if (acceptSocket == INVALID_SOCKET) {
-			this->LastError = "accept() failed: " + WSAGetLastError();
-			this->printError();
+			this->LastError = "accept() failed: " + std::to_string(WSAGetLastError());
+			this->printLastError();
 			continue;
 		}
 
@@ -172,6 +170,7 @@ void Program::acceptConnections()
 
 		// The Server is always ready to receive messages from Clients
 		std::thread receiveMsgThread(&Program::receiveMsg, this, user);
+		receiveMsgThread.detach();
 	}
 }
 
@@ -212,6 +211,7 @@ void Program::receiveMsg(User* user)
 			break;
 		case RcvMsgFlag::DOWNLOAD_FILE: {
 			std::thread sendFileThread(&Program::sendAFileToClient, this, msg, user);
+			sendFileThread.detach();
 			break;
 		}
 		case RcvMsgFlag::LOGOUT:
@@ -233,27 +233,27 @@ void Program::sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLe
 	this->sendData(user, msg, msgLen);
 }
 
-int Program::receiveData(User* user, char* buffer, size_t const& len)
+int Program::receiveData(User* user, char* buffer, uint64_t const& len)
 {
 	int iResult;
 
 	iResult = recv(user->AcceptSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "recv() failed with error: " + WSAGetLastError();
-		this->printError();
+		this->LastError = "recv() failed with error: " + std::to_string(WSAGetLastError());
+		this->printLastError();
 	}
 
 	return iResult;
 }
 
-int Program::sendData(User* user, char* buffer, size_t const& len)
+int Program::sendData(User* user, char* buffer, uint64_t const& len)
 {
 	int iResult;
 
 	iResult = send(user->AcceptSocket, buffer, len, 0);
 	if (iResult == SOCKET_ERROR) {
-		this->LastError = "send() failed with error: " + WSAGetLastError();
-		this->printError();
+		this->LastError = "send() failed with error: " + std::to_string(WSAGetLastError());
+		this->printLastError();
 	}
 	
 	return iResult;
@@ -264,7 +264,7 @@ void Program::loadUserAccountInfo() {
 	fin.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::binary);
 	if (fin.is_open() == false) {
 		this->LastError = "Failed to open user info file to read";
-		this->printError();
+		this->printLastError();
 		return;
 	}
 
@@ -322,7 +322,7 @@ void Program::verifyUserRegistrationOrLogin(SOCKET socket) {
 	case 0:	// Placeholder	// Registration
 	{
 		result = true;
-		for (size_t i = 0; i < UserList.size(); i++) {
+		for (uint64_t i = 0; i < UserList.size(); i++) {
 			if (username == UserList[i]->Username) {
 				result = false;
 			}
@@ -357,7 +357,7 @@ void Program::addUserAccountInfo(string username, string password, SOCKET socket
 	fout.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::app | ios::binary);
 	if (fout.is_open() == false) {
 		this->LastError = "Failed to open user info file to write";
-		this->printError();
+		this->printLastError();
 		return;
 	}
 
@@ -380,16 +380,16 @@ void Program::addUserAccountInfo(string username, string password, SOCKET socket
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	// Send a reply to the Client (user) first
-	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;;
+	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
 	uint64_t msgLen = 0;
 	char* msg = nullptr;
 
 	this->sendMsg(user, flag, msgLen, msg);
 
 	// Then, send a file to that Client (user)
-	size_t indexFile = stoi(indexFile_str);
+	std::string filePath = this->getPathOfAFile(stoi(indexFile_str));
 
-	std::ifstream fin(this->getPathOfAFile(indexFile), std::ios_base::binary);
+	std::ifstream fin(filePath, std::ios_base::binary);
 
 	if (fin.is_open()) {
 		int iResult;
@@ -398,19 +398,18 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		char* buffer = new char[this->BUFFER_LEN];
 
 		// Get file's size
-		fin.seekg(std::ios_base::end);
+		fin.seekg(0, std::ios_base::end);
 		fileSize = fin.tellg();
-		fin.seekg(std::ios_base::beg);
+		fin.seekg(0, std::ios_base::beg);
 
 		// Send file's size
 		this->sendData(user, (char*)&fileSize, sizeof(fileSize));
 
 		// Send file's data
-		for (size_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
+		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			fin.read(buffer, this->BUFFER_LEN);
 			this->sendData(user, buffer, this->BUFFER_LEN);
 		}
-
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		this->sendData(user, buffer, fileSize % this->BUFFER_LEN);
 
@@ -419,19 +418,22 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		fin.close();
 	}
 	else {
-		this->LastError = "Failed to open file " + this->getPathOfAFile(indexFile);
-		this->printError();
+		this->LastError = "Failed to open file " + filePath;
+		this->printLastError();
 	}
 }
 
-std::string Program::getPathOfAFile(size_t const& indexFile)
+std::string Program::getPathOfAFile(uint64_t const& indexFile)
 {
+	if (indexFile >= this->FileNameList.size())
+		throw "Out of subscript";
+
 	return this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + this->FileNameList[indexFile];
 }
 
-void Program::printError()
+void Program::printLastError()
 {
-	this->printError();
+	cout << this->LastError << "\n";
 }
 
 unsigned long Program::fileSizeBytes(string filename) {
@@ -442,7 +444,7 @@ unsigned long Program::fileSizeBytes(string filename) {
 		return 0;
 	}
 
-	size_t fileSize = f.tellg();
+	uint64_t fileSize = f.tellg();
 	f.close();
 
 	return fileSize;
@@ -450,7 +452,12 @@ unsigned long Program::fileSizeBytes(string filename) {
 
 void Program::run()
 {
-	this->homeScreen(); 
+	std::thread userInteractThread(&Program::homeScreen, this);
+	userInteractThread.detach();
+
+	this->initWinsock();
+	this->initListenSocket();
+	this->acceptConnections();
 }
 
 void Program::printStatus() {

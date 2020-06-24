@@ -43,14 +43,15 @@ public:
 private:
 	User UserInfo;
 
-	std::string ServerIP;
-	std::string ServerPort;
+	LPCSTR ServerIP;
+	LPCSTR const SERVER_PORT = "27015";
 
 	std::vector<File> FileList;
 
 	uint16_t const BUFFER_LEN = 4096;
 
 	std::string const DATABASE_PATH = "Client_Database";
+	std::string const DOWNLOAD_FOLDER = "Download";			// default
 	std::string const LOG_FILE = "logfile.txt";
 
 	std::string LastError;
@@ -61,7 +62,7 @@ private:
 	SELECTED     selected;	// selected STATE
 
 private:
-	/* ================ Init ================ */
+	// Init
 	void initDataBaseDirectory();
 	void initFileList();
 
@@ -73,15 +74,15 @@ private:
 	void receiveMsg();
 	void sendMsg(SendMsgFlag const& flag, char* msg, uint64_t const& msgLen);
 	
-	int receiveData(char* buffer, size_t const& len);
-	int sendData(char* buffer, size_t const& len);
+	int receiveData(char* buffer, uint64_t const& len);
+	int sendData(char* buffer, uint64_t const& len);
 
 	// Register
 	void registerAccount();
 
 	// Download File
-	void downloadFile(size_t const& fileIndex);
-	void receiveAFileFromServer(std::string const& downloadPath);
+	void sendADownloadFileRequest(uint64_t const& fileIndex);
+	void receiveADownloadFileReply(std::string const& downloadPath);
 
 	// Handle error
 	void printError();

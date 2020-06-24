@@ -1,7 +1,7 @@
 #include "Console.h"
 
 
-void printTextAtMid(string const& text, size_t const& left, size_t const& right)
+void printTextAtMid(string const& text, uint64_t const& left, uint64_t const& right)
 {
     gotoXY((right - left - text.length()) / 2, whereY());
     cout << text;
@@ -9,7 +9,7 @@ void printTextAtMid(string const& text, size_t const& left, size_t const& right)
 
 void setColor(COLOR textColor, COLOR bgColor)
 {
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ((size_t)textColor + ((size_t)bgColor * 16)));
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ((uint64_t)textColor + ((uint64_t)bgColor * 16)));
 }
 
 void clrscr()
