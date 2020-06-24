@@ -200,6 +200,34 @@ int main()
 	return 0;
 }
 ```
+
+### Thread (non-static method in class)
+[Reference](https://stackoverflow.com/questions/17472827/create-thread-inside-class-with-function-from-same-class)
+```cpp
+class Server {
+public:
+	void sendMsg(User* user);
+	void rcvMsg(User* user);
+	void transmitMsg(User* user);
+};
+
+void Server::sendMsg(User* user) {
+	// ...
+}
+
+void Server::rcvMsg(User* user) {
+	// ...
+}
+
+void transmitMsg(User* user) {
+	std::thread sendMsgThread(&Server::sendMsg, this, user);
+	std::thread rcvMsgThread(&Server::rcvMsg, this, user);
+
+	// ...
+}
+```
+
+
 ### Simple Chat (One Server - Multiple Clients)
 #### Server
 ```cpp
