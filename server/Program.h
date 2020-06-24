@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Console.h"
+#include "User.h"
+
+#pragma comment(lib, "Ws2_32.lib")
 
 enum class SELECTED {
 	ONLINE = 0,
@@ -8,17 +11,27 @@ enum class SELECTED {
 	NO
 };
 
-struct User {
-	string Username;
-	string Password;
-	SOCKET Socket;
+enum class SendMsgFlag : uint8_t
+{
+	FAIL,
+	SUCCESS,
+	DOWNLOAD_FILE,
+	LOGOUT
+};
+
+enum class RcvMsgFlag : uint8_t
+{
+	REGISTER,
+	LOGIN,
+	PASSWORD,
+	UPLOAD_FILE,
+	DOWNLOAD_FILE,
+	LOGOUT
 };
 
 class Program
 {
 public:
-	
-
 	Program();
 	~Program();
 
@@ -26,13 +39,15 @@ public:
 
 private:
 	SOCKET ListenSocket;
-	std::string const DEFAULT_PORT = "27015";
+	std::string const DEFAULT_PORT = "27015";	// ... Random
 
-	//std::mutex MutexUpload;
+	std::mutex MutexUpload;
 
 	std::vector<User*> UserList;
 	std::vector<User*> OnlineUserList;
 	std::vector<std::string> FileNameList;
+
+	uint16_t const BUFFER_LEN = 4096;
 
 	/* ================ GUI ================ */
 	SELECTED selected;
@@ -41,17 +56,34 @@ private:
 	unsigned int line_3; // line of Columm : History Log
 
 	/* ================ PATH ================ */
-	std::string const DATABASE_PATH = "Sever_Database";    // .../Database/
-	std::string const SHARED_FILES_FOLDER = "SharedFiles";       // SharedFiles/
-	std::string const LOG_FILE = "logfile.txt";       // logfile.txt
-	std::string const SHARED_FILE_NAMES_FILE = "filename.bin";      // filename.bin
-	std::string const USER_FILE = "user.bin";          // user.bin
+	std::string const DATABASE_PATH = "Sever_Database";			// .../Database/
+	std::string const SHARED_FILES_FOLDER = "SharedFiles";		// SharedFiles/
+	std::string const LOG_FILE = "logfile.txt";					// logfile.txt
+	std::string const SHARED_FILE_NAMES_FILE = "filename.bin";	// filename.bin
+	std::string const USER_FILE = "user.bin";					// user.bin
 	
+	// filename: filename0\0filename1\0
+	// user: username\0password\0
+
 	std::string LastError;
+
 private:
 	void InitDataBaseDirectory();
 	void InitUserList();
 	void InitFileNameList();
+	
+
+	void initWinsock();
+	void initListenSocket();
+	void acceptConnections();
+
+	void receiveMsg(User* user);
+
+	void sendAFileToClient(std::string const& indexFile_str, User* user);
+
+	std::string getPathOfAFile(size_t const& indexFile);
+
+
 	unsigned long fileSizeBytes(string filename);
 	string toStringFileSize(string filename);
 	string shortenFileName(string filename);

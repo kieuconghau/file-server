@@ -1,16 +1,8 @@
 #pragma once
 
 #include "Console.h"
-
-struct File {
-	string fileName;
-	string fileSize;
-};
-
-struct User {
-	string Username;
-	string Password;
-};
+#include "User.h"
+#include "File.h"
 
 enum class SELECTED {
 	REGISTER = 0,
@@ -22,18 +14,34 @@ enum class SELECTED {
 	NO
 };
 
+enum class SendMsgFlag : uint8_t
+{
+	REGISTER,
+	LOGIN,
+	PASSWORD,
+	UPLOAD_FILE,
+	DOWNLOAD_FILE,
+	LOGOUT
+};
+
+enum class RcvMsgFlag : uint8_t
+{
+	FAIL,
+	SUCCESS,
+	DOWNLOAD_FILE,
+	LOGOUT
+};
+
 class Program
 {
 public:
 	Program();
 	~Program();
+
 	void run();
 
-	/* Init for test */
-	void InitFileList();
-
 private:
-	SOCKET ConnectSocket;
+	User UserInfo;
 
 	std::string ServerIP;
 	std::string ServerPort;
@@ -50,15 +58,18 @@ private:
 	int          line_3;	// line of Columm : History Log
 	SELECTED     selected;	// selected STATE
 
-
-
-	User         UserInfo;		// Client info
-	vector<File> list;		// List file
-
 private:
 	/* ================ Init ================ */
 	void InitDataBaseDirectory();
+	void InitFileList();
 
+	void initWinsock();
+	void initConnectSocket();
+
+	void receiveMsg();
+
+	void sendADownloadFileRequest(size_t const& fileIndex);
+	void receiveAFileFromServer();
 
 
 	void homeScreen();

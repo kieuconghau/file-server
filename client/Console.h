@@ -1,10 +1,17 @@
 #pragma once
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <Windows.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+
 #include <string>
 #include <iostream>
-#include <Windows.h>
-#include <chrono>
+#include <fstream>
 #include <thread>
-#include <sstream>
 #include <ctime>
 #include <conio.h>
 #include <vector>
