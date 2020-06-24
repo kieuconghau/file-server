@@ -235,6 +235,122 @@ void Program::receiveMsg(User* user)
 	}
 }
 
+void Program::loadUserAccountInfo() {
+	ifstream fin;
+	fin.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::binary);
+	if (fin.is_open() == false) {
+		this->LastError = "Failed to open user info file to read";
+		return;
+	}
+
+	fin.seekg(0, ios::end);
+	int fileLength = fin.tellg();
+	fin.seekg(0, ios::beg);
+
+	uint8_t fieldLength;
+	string field;
+	while (fileLength > 0) {
+		User* pUser = new User;
+
+		getline(fin, field, '\0');
+		pUser->Username = field;
+
+		getline(fin, field, '\0');
+		pUser->Password = field;
+
+		UserList.push_back(pUser);
+
+		fileLength -= fin.tellg();		// ???
+	}
+
+	fin.close();
+}
+
+void Program::verifyUserRegistrationOrLogin(SOCKET socket) {
+	string username;
+	string password;
+	uint8_t flag; // Placeholder
+	uint64_t msgLen;
+	char* msg;
+	uint8_t mode;
+	bool result = true;
+
+	recv(socket, (char*)&flag, sizeof(flag), 0);
+	mode = flag;
+	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
+	msg = new char[msgLen + 1];
+	memset(msg, 0, msgLen + 1);
+	recv(socket, (char*)msg, msgLen, 0);
+	username = msg;
+	delete[] msg;
+
+	recv(socket, (char*)&flag, sizeof(flag), 0);
+	if (flag != 2) return;
+	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
+	msg = new char[msgLen + 1];
+	memset(msg, 0, msgLen + 1);
+	recv(socket, (char*)msg, msgLen, 0);
+	password = msg;
+	delete[] msg;
+
+	switch (mode) {
+	case 0:	// Placeholder	// Registration
+	{
+		result = true;
+		for (size_t i = 0; i < UserList.size(); i++) {
+			if (username == UserList[i]->Username) {
+				result = false;
+			}
+		}
+
+		if (result == true) {	// Registration succeeded
+			addUserAccountInfo(username, password, socket);
+			
+			flag = 1;
+			send(socket, (char*)&flag, sizeof(flag), 0);
+
+			cout << "Socket " << socket << " registered succeessfully!" << endl;
+			cout << "Username: " << username << endl;
+		}
+		else {	// Registration failed
+			flag = 0;
+			send(socket, (char*)&flag, sizeof(flag), 0);
+			cout << "Socket " << socket << " failed to register" << endl;
+		}
+
+		break;
+	}
+	case 1:	// Placeholder	// Login
+		break;
+	default:
+		cout << "Illegal flag. Something went wrong..." << endl;
+	}
+}
+
+void Program::addUserAccountInfo(string username, string password, SOCKET socket) {
+	ofstream fout;
+	fout.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::app | ios::binary);
+	if (fout.is_open() == false) {
+		this->LastError = "Failed to open user info file to write";
+		return;
+	}
+
+	User* pUser = new User;
+	pUser->Username = username;
+	pUser->Password = password;
+	pUser->AcceptSocket = socket;
+	UserList.push_back(pUser);
+	OnlineUserList.push_back(pUser);
+
+	fout.seekp(0, ios::end);
+	cout << "File size before writing: " << fout.tellp() << endl;
+
+	fout.write((char*)username.c_str(), username.length() + 1);
+	fout.write((char*)password.c_str(), password.length() + 1);
+
+	fout.close();
+}
+
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	size_t indexFile = stoi(indexFile_str);
@@ -249,7 +365,8 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		char* buffer = new char[this->BUFFER_LEN];
 
 		fin.seekg(std::ios_base::end);
-		fileSize = fin.gcount();
+		fileSize = fin.tellg();
+		fin.seekg(std::ios_base::beg);
 
 		// Send file's size
 		iResult = send(user->AcceptSocket, (char*)&fileSize, sizeof(fileSize), 0);
@@ -277,6 +394,9 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 
 		delete[] buffer;
 		fin.close();
+	}
+	else {
+		this->LastError = "Failed to open file " + this->getPathOfAFile(indexFile);
 	}
 }
 

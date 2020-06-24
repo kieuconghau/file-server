@@ -68,19 +68,24 @@ private:
 	std::string LastError;
 
 private:
+	// Init
 	void initDataBaseDirectory();
 	void initUserList();
 	void initFileNameList();
 	
-
+	// Set up Server
 	void initWinsock();
 	void initListenSocket();
 	void acceptConnections();
-
 	void receiveMsg(User* user);
 
-	void sendAFileToClient(std::string const& indexFile_str, User* user);
+	// Register
+	void loadUserAccountInfo();
+	void verifyUserRegistrationOrLogin(SOCKET socket);
+	void addUserAccountInfo(string username, string password, SOCKET socket);
 
+	// Download File
+	void sendAFileToClient(std::string const& indexFile_str, User* user);
 	std::string getPathOfAFile(size_t const& indexFile);
 
 
