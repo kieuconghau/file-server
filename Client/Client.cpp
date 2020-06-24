@@ -40,7 +40,7 @@ int Client::run() {
 		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype,
 			ptr->ai_protocol);
 		if (ConnectSocket == INVALID_SOCKET) {
-			printf("socket failed with error: %ld\n", WSAGetLastError());
+			printf("socket() failed with error: %ld\n", WSAGetLastError());
 			WSACleanup();
 			return 1;
 		}
@@ -48,6 +48,7 @@ int Client::run() {
 		// Connect to server.
 		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 		if (iResult == SOCKET_ERROR) {
+			printf("connect() failed with error: %ld\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
 			continue;
@@ -56,13 +57,6 @@ int Client::run() {
 	}
 
 	freeaddrinfo(result);
-
-	if (ConnectSocket == INVALID_SOCKET) {
-		printf("Error at socket(): %ld\n", WSAGetLastError());
-		freeaddrinfo(result);
-		WSACleanup();
-		return 1;
-	}
 
 	if (ConnectSocket == INVALID_SOCKET) {
 		printf("Unable to connect to the Server!\n");

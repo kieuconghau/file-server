@@ -3,7 +3,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <thread>
 #include <Windows.h>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -11,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <thread>
 using namespace std;
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -25,6 +25,7 @@ struct User {
 
 class Server {
 public:
+	Server();
 	int run();
 private:
 	SOCKET AcceptSocketList[10];
@@ -43,6 +44,6 @@ private:
 	// User: USERNAMELEN | USERNAME | PWDLEN | PWD
 private:
 	void loadUserAccountInfo();
-	void verifyUserRegistrationOrLogin(SOCKET &socket);
+	void verifyUserRegistrationOrLogin(SOCKET socket);
 	void addUserAccountInfo(string username, string password, SOCKET socket);
 };

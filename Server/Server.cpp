@@ -1,5 +1,10 @@
 #include "Server.h"
 
+Server::Server() {
+	DatabasePath = "";
+	UsersFile = "user.bin";
+}
+
 int Server::run() {
 	WSAData wsaData;
 
@@ -67,6 +72,9 @@ int Server::run() {
 	// Load user account info
 	this->loadUserAccountInfo();
 
+	vector<thread> registerUserThreadList;
+	int threadCount = 0;
+
 	// Accept connections from clients
 	while (true) {
 		SOCKET AcceptSocket = INVALID_SOCKET;
@@ -78,7 +86,8 @@ int Server::run() {
 			continue;
 		}
 
-		thread registerUser(&Server::verifyUserRegistrationOrLogin, this, AcceptSocket);
+		registerUserThreadList.push_back(thread(&Server::verifyUserRegistrationOrLogin, this, AcceptSocket));
+		threadCount++;
 		//HANDLE sendAndRcvMsgThread = CreateThread(NULL, 0, sendAndRcvMsg, &AcceptSocketList[SocketCount], 0, NULL);
 	}
 
@@ -95,7 +104,7 @@ void Server::loadUserAccountInfo() {
 	ifstream fin;
 	fin.open(DatabasePath + UsersFile, ios::binary);
 	if (fin.is_open() == false) {
-		cout << "Failed to open user info file" << endl;
+		cout << "Failed to open user info file to read" << endl;
 		return;
 	}
 
@@ -130,32 +139,36 @@ void Server::loadUserAccountInfo() {
 	fin.close();
 }
 
-void Server::verifyUserRegistrationOrLogin(SOCKET &socket) {
+void Server::verifyUserRegistrationOrLogin(SOCKET socket) {
 	string username;
 	string password;
 	uint8_t flag; // Placeholder
 	uint64_t msgLen;
 	char* msg;
+	uint8_t mode;
 	bool result = true;
 
 	recv(socket, (char*)&flag, sizeof(flag), 0);
-	switch (flag) {
+	mode = flag;
+	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
+	msg = new char[msgLen + 1];
+	memset(msg, 0, msgLen + 1);
+	recv(socket, (char*)msg, msgLen, 0);
+	username = msg;
+	delete[] msg;
+
+	recv(socket, (char*)&flag, sizeof(flag), 0);
+	if (flag != 2) return;
+	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
+	msg = new char[msgLen + 1];
+	memset(msg, 0, msgLen + 1);
+	recv(socket, (char*)msg, msgLen, 0);
+	password = msg;
+	delete[] msg;
+
+	switch (mode) {
 	case 0:	// Placeholder	// Registration
 	{
-		recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
-		msg = new char[msgLen + 1];
-		recv(socket, (char*)msg, msgLen, 0);
-		username = msg;
-		delete[] msg;
-
-		recv(socket, (char*)&flag, sizeof(flag), 0);
-		if (flag != 2) break;
-		recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
-		msg = new char[msgLen + 1];
-		recv(socket, (char*)msg, msgLen, 0);
-		password = msg;
-		delete[] msg;
-
 		result = true;
 		for (size_t i = 0; i < UserList.size(); i++) {
 			if (username == UserList[i]->Username) {
@@ -163,21 +176,20 @@ void Server::verifyUserRegistrationOrLogin(SOCKET &socket) {
 			}
 		}
 
-		uint8_t reply_flag;
-		if (result == true) {
+		if (result == true) {	// Registration succeeded
 			addUserAccountInfo(username, password, socket);
 			this->AcceptSocketList[SocketCount] = socket;
 			++this->SocketCount;
 
-			reply_flag = 1;
-			send(socket, (char*)&reply_flag, sizeof(reply_flag), 0);
+			flag = 1;
+			send(socket, (char*)&flag, sizeof(flag), 0);
 
 			cout << "Socket " << socket << " registered succeessfully!" << endl;
 			cout << "Username: " << username << endl;
 		}
-		else {
-			reply_flag = 0;
-			send(socket, (char*)&reply_flag, sizeof(reply_flag), 0);
+		else {	// Registration failed
+			flag = 0;
+			send(socket, (char*)&flag, sizeof(flag), 0);
 			cout << "Socket " << socket << " failed to register" << endl;
 		}
 
@@ -185,6 +197,8 @@ void Server::verifyUserRegistrationOrLogin(SOCKET &socket) {
 	}
 	case 1:	// Placeholder	// Login
 		break;
+	default:
+		cout << "Illegal flag. Something went wrong..." << endl;
 	}
 }
 
@@ -192,7 +206,7 @@ void Server::addUserAccountInfo(string username, string password, SOCKET socket)
 	ofstream fout;
 	fout.open(DatabasePath + UsersFile, ios::binary);
 	if (fout.is_open() == false) {
-		cout << "Failed to open user info file" << endl;
+		cout << "Failed to open user info file to write" << endl;
 		return;
 	}
 
