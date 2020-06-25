@@ -80,10 +80,10 @@ private:
 	
 	// Transfer
 	void receiveMsg(User* user);
-	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg);
+	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, const char* msg);
 
 	int receiveData(User* user, char* buffer, uint64_t const& len);
-	int sendData(User* user, char* buffer, uint64_t const& len);
+	int sendData(User* user, const char* buffer, uint64_t const& len);
 
 	// Register
 	void loadUserAccountInfo();

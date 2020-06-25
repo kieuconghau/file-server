@@ -36,7 +36,6 @@ void Program::run()
 	//this->FileList.push_back(file);
 	//// debug
 
-	// this->homeScreen();
 	std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 

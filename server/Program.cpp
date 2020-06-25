@@ -238,7 +238,7 @@ void Program::receiveMsg(User* user)
 	}
 }
 
-void Program::sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg)
+void Program::sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, const char* msg)
 {
 	this->sendData(user, (char*)&flag, sizeof(flag));
 	this->sendData(user, (char*)&msgLen, sizeof(msgLen));
@@ -258,7 +258,7 @@ int Program::receiveData(User* user, char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-int Program::sendData(User* user, char* buffer, uint64_t const& len)
+int Program::sendData(User* user, const char* buffer, uint64_t const& len)
 {
 	int iResult;
 
@@ -500,7 +500,6 @@ void Program::run()
 	//this->FileNameList.push_back("bigFile.pdf");
 	//// debug
 
-	//this->homeScreen();
 	std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 
