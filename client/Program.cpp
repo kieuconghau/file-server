@@ -187,6 +187,16 @@ void Program::receiveMsg()
 			this->receiveADownloadFileReply(downloadPath);
 			break;
 		}
+		case RcvMsgFlag::NEW_USER_LOGIN: {
+			this->writeLogNewLogin();
+
+			break;
+		}
+		case RcvMsgFlag::NEW_FILE_LIST: {
+			// ...
+
+			break;
+		}
 		case RcvMsgFlag::LOGOUT: {
 			// ...
 
@@ -274,6 +284,18 @@ void Program::tryLogin() {
 	passwordLen = password.length();
 	sendData((char*)&passwordLen, sizeof(passwordLen));
 	sendData(password.c_str(), password.length());
+}
+
+void Program::writeLogNewLogin() {
+	char* username;
+	uint8_t usernameLen;
+
+	receiveData((char*)&usernameLen, sizeof(usernameLen));
+	username = new char[usernameLen + 1];
+	receiveData(username, usernameLen + 1);
+
+	string usernameString(username);
+	cout << "User <" << usernameString << "> logged in." << endl;	// PRINT LOG
 }
 
 void Program::sendADownloadFileRequest(uint64_t const& fileIndex)

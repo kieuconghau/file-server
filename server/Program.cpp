@@ -299,6 +299,9 @@ void Program::verifyUserRegister(User* user) {
 	this->addNewUser(user);
 
 	cout << "User <" << user->Username << "> registered an account." << endl;	// PRINT LOG
+
+	delete[] username;
+	delete[] password;
 }
 
 void Program::addNewUser(User* user) {
@@ -359,10 +362,23 @@ void Program::verifyUserLogin(User* user) {
 	OnlineUserList.push_back(user);
 
 	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 0, NULL);
+
 	// Send the list of shared files to current user...
+
 	// Send new user's info to other clients for them to print log...
+	// Send to every online users, except the newly-logged in user,
+	// who's at the back of the OnlineUserList vector
+	for (size_t i = 0; i < this->OnlineUserList.size() - 1; i++) {
+		sendMsg(user, SendMsgFlag::NEW_USER_LOGIN, 0, NULL);
+
+		sendData(OnlineUserList[i], (char*)&usernameLen, sizeof(usernameLen));
+		sendData(OnlineUserList[i], username, usernameLen + 1);
+	}
 
 	cout << "User <" << user->Username << "> logged in." << endl;	// PRINT LOG
+
+	delete[] username;
+	delete[] password;
 }
 
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
