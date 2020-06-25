@@ -36,7 +36,7 @@ void Program::run()
 	this->initConnectSocket();
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
-	rcvMsgThread.join();*/
+	rcvMsgThread.join();
 }
 
 void Program::initDataBaseDirectory() {
@@ -871,7 +871,7 @@ string Program::shortenFileName(string filename) {
 	return filename;
 }
 
-string shortenFileSize(unsigned long size) {
+string Program::shortenFileSize(unsigned long size) {
 	uint8_t d = 0;
 
 	while (size > 1000) {
