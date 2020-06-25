@@ -61,3 +61,4 @@ void setColor(COLOR textColor, COLOR bgColor);
 void printConsole(COLOR textColor, COLOR bgColor, const unsigned int& x, const unsigned int& y, string content);
 void printTextAtMid(string const& text, uint64_t const& left, uint64_t const& right);
 wstring s2ws(const std::string& s); // string to wstring
+void ShowConsoleCursor(bool showFlag);

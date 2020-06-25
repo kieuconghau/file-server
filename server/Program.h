@@ -61,6 +61,7 @@ private:
 	unsigned int line_1; // line of Columm: Client
 	unsigned int line_2; // line of Columm: File Uploaded
 	unsigned int line_3; // line of Columm: History Log
+	unsigned int line_pb;// line of ProgressBar
 
 	/* ================ PATH ================ */
 	std::string const DATABASE_PATH = "Sever_Database";			// .../Server_Database/
@@ -114,6 +115,7 @@ private:
 	unsigned long fileSizeBytes(string filename);
 	string toStringFileSize(string filename);
 	string shortenFileName(string filename);
+	string shortenFileSize(unsigned long size);
 
 	void homeScreen();
 	//void homeNavigate();
@@ -122,11 +124,11 @@ private:
 	void printFiles(string filename);
 
 	void printLog(string gui, string log);
-	void printLog(SendMsgFlag flag);
-	void printLog(RcvMsgFlag flag);
+	void printLog(string user, string gui, string log);
 
 	void printClient(string user, bool login);
 	void updateClient(string Username, bool login);
+	void printProgressBar(float percentage);
 
 	void test();
 };

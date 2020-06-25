@@ -113,8 +113,7 @@ private:
 	string shortenFileName(string filename);
 	string shortenFileSize(unsigned long size);
 	void printLog(string gui, string log);
-	void printLog(SendMsgFlag flag);
-	void printLog(RcvMsgFlag flag);
+	void printLog(string gui_1, string gui_2, string log);
 
 	/* ==== Client Register/Login ==== */
 	void buttonClient();
@@ -126,6 +125,7 @@ private:
 	void printMode();
 	void navigateMode();
 	string enterPath();
+	bool isFilePathExist(const std::string& name);
 
 	void printStatus();
 	void printProgressBar(float percentage);
