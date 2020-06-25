@@ -404,7 +404,7 @@ void Program::verifyUserLogin(User* user) {
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	// Send a reply to the Client (user) first
-	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE;
+	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE_SUCCESS;
 	uint64_t msgLen = 0;
 	char* msg = nullptr;
 
@@ -450,7 +450,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 			this->sendData(user, buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 10 == 0)
+			if (i % 50 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
@@ -461,8 +461,8 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		ShowConsoleCursor(true);
 
 		// Log
-		string gui = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		string log = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		gui = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		log = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(string("To ") + user->Username + string(":"), gui, log);
 
 		// Release resources
@@ -515,7 +515,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 			fout.write(buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 10 == 0)
+			if (i % 50 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 

@@ -13,6 +13,7 @@ Program::Program()
 	// Init something you need
 	this->initDataBaseDirectory();
 	this->initFileList();
+	this->initWinsock();
 
 	/* LOG */
 	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
@@ -29,28 +30,20 @@ Program::~Program()
 
 void Program::run()
 { 
-	std::thread userInteractThread(&Program::homeScreen, this);
-	userInteractThread.detach();
+	this->homeScreen();
 
-	this->initWinsock();
-	this->initConnectSocket();
-
-	std::thread rcvMsgThread(&Program::receiveMsg, this);
-
-	// <DEBUG> (should be replaced by user interface)
-	string choice;
-	cout << "0: Register" << endl;
-	cout << "1: Login" << endl;
-	cout << "Choice: ";	getline(cin, choice);
-	if (choice == "0") {
-		this->tryRegister();
-	}
-	else if (choice == "1") {
-		this->tryLogin();
-	}
-	//  </DEBUG>
-
-	rcvMsgThread.join();
+	//// <DEBUG> (should be replaced by user interface)
+	//string choice;
+	//cout << "0: Register" << endl;
+	//cout << "1: Login" << endl;
+	//cout << "Choice: ";	getline(cin, choice);
+	//if (choice == "0") {
+	//	this->tryRegister();
+	//}
+	//else if (choice == "1") {
+	//	this->tryLogin();
+	//}
+	////  </DEBUG>
 }
 
 void Program::initDataBaseDirectory() {
@@ -89,6 +82,7 @@ void Program::initConnectSocket()
 
 	iResult = getaddrinfo(this->ServerIP, this->SERVER_PORT, &hints, &result);	// Update 'result' with port, IP address,...
 
+	// Wrong Server IP
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed: " + std::to_string(iResult);
 		this->printLastError();
@@ -177,7 +171,7 @@ void Program::receiveMsg()
 			// Receive the list of shared files from server...
 			break;
 		}
-		case RcvMsgFlag::DOWNLOAD_FILE: {
+		case RcvMsgFlag::DOWNLOAD_FILE_SUCCESS: {
 			std::string downloadPath = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
 			this->receiveADownloadFileReply(downloadPath);
 			break;
@@ -239,46 +233,32 @@ int Program::sendData(const char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-void Program::tryRegister() {
-	string username;
-	string password;
+void Program::tryRegister(User *user) {
 	size_t usernameLen;
 	size_t passwordLen;
-
-	// <DEBUG> (should be replaced by user interface)
-	cout << "Username: ";	getline(cin, username);
-	cout << "Password: ";	getline(cin, password);
-	// </DEBUG>
 
 	sendMsg(SendMsgFlag::REGISTER, NULL, 0);
 
-	usernameLen = username.length();
+	usernameLen = user->Username.length();
 	sendData((char*)&usernameLen, sizeof(usernameLen));
-	sendData(username.c_str(), username.length());
-	passwordLen = password.length();
+	sendData(user->Username.c_str(), user->Username.length());
+	passwordLen =user->Password.length();
 	sendData((char*)&passwordLen, sizeof(passwordLen));
-	sendData(password.c_str(), password.length());
+	sendData(user->Password.c_str(), user->Password.length());
 }
 
-void Program::tryLogin() {
-	string username;
-	string password;
+void Program::tryLogin(User* user) {
 	size_t usernameLen;
 	size_t passwordLen;
 
-	// <DEBUG> (should be replaced by user interface)
-	cout << "Username: ";	getline(cin, username);
-	cout << "Password: ";	getline(cin, password);
-	// </DEBUG>
-
 	sendMsg(SendMsgFlag::LOGIN, NULL, 0);
 
-	usernameLen = username.length();
+	usernameLen = user->Username.length();
 	sendData((char*)&usernameLen, sizeof(usernameLen));
-	sendData(username.c_str(), username.length());
-	passwordLen = password.length();
+	sendData(user->Username.c_str(), user->Username.length());
+	passwordLen = user->Password.length();
 	sendData((char*)&passwordLen, sizeof(passwordLen));
-	sendData(password.c_str(), password.length());
+	sendData(user->Password.c_str(), user->Password.length());
 }
 
 void Program::writeLogNewLogin() {
@@ -340,7 +320,7 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 			fout.write(buffer, this->BUFFER_LEN);
 
 			//Progress
-			if (i % 10 == 0)
+			if (i % 50 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
@@ -414,7 +394,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 			this->sendData(buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 10 == 0)
+			if (i % 50 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
@@ -782,6 +762,10 @@ void Program::loginClient() {
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);	this->ServerIP = input.c_str();
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
+
+	this->initConnectSocket();
+	std::thread rcvMsgThread(&Program::receiveMsg, this);
+	rcvMsgThread.detach();
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 12); cout << "Username: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, this->UserInfo.Username);

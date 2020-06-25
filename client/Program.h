@@ -85,10 +85,10 @@ private:
 	int sendData(const char* buffer, uint64_t const& len);
 
 	// Register
-	void tryRegister();
+	void tryRegister(User* user);
 
 	// Login
-	void tryLogin();
+	void tryLogin(User* user);
 
 	// Write log for new user's login
 	void writeLogNewLogin();
