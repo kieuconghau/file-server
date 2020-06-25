@@ -3,4 +3,6 @@
 int main() {
 	Program Client;
 	Client.run();
+
+	return 0;
 }

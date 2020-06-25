@@ -40,6 +40,16 @@ Program::~Program()
 	WSACleanup();
 }
 
+void Program::run()
+{
+	std::thread userInteractThread(&Program::homeScreen, this);
+	userInteractThread.detach();
+
+	this->initWinsock();
+	this->initListenSocket();
+	this->acceptConnections();
+}
+
 void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
 		CreateDirectory(s2ws(DATABASE_PATH + "\\" + SHARED_FILES_FOLDER).c_str(), NULL);
@@ -496,20 +506,6 @@ unsigned long Program::fileSizeBytes(string filename) {
 	f.close();
 
 	return fileSize;
-}
-
-void Program::run()
-{
-	//// debug
-	//this->FileNameList.push_back("bigFile.pdf");
-	//// debug
-
-	std::thread userInteractThread(&Program::homeScreen, this);
-	userInteractThread.detach();
-
-	this->initWinsock();
-	this->initListenSocket();
-	this->acceptConnections();
 }
 
 void Program::printStatus() {
