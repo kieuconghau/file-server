@@ -256,6 +256,38 @@ void Program::registerAccount() {
 	}
 }
 
+void Program::tryLogin() {
+	string username;
+	string password;
+
+	cout << "Username: ";	getline(cin, username);
+	cout << "Password: ";	getline(cin, password);
+
+	sendMsg(SendMsgFlag::LOGIN, NULL, 0);
+	sendData(username.c_str(), username.length());
+	sendData(password.c_str(), password.length());
+}
+
+void Program::receiveLoginResult(RcvMsgFlag result) {
+	switch (result)
+	{
+	case RcvMsgFlag::LOGIN_FAIL_USERNAME:
+		cout << "Login failed. Username doesn't exist" << endl;
+		// disconnect to server...
+		break;
+	case RcvMsgFlag::LOGIN_FAIL_PASSWORD:
+		cout << "Login failed. Wrong password" << endl;
+		// disconnect to server...
+		break;
+	case RcvMsgFlag::LOGIN_SUCCESS:
+		cout << "Login success!" << endl;
+		// Receive the list of shared files from server...
+		break;
+	default:
+		break;
+	}
+}
+
 void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (string) */

@@ -13,9 +13,14 @@ enum class SELECTED {
 
 enum class SendMsgFlag : uint8_t
 {
-	FAIL,
-	SUCCESS,
-	DOWNLOAD_FILE,
+	REGISTER_FAIL = 0,
+	REGISTER_SUCCESS,
+	LOGIN_FAIL_USERNAME,
+	LOGIN_FAIL_PASSWORD,
+	LOGIN_SUCCESS,
+	UPLOAD_FILE_FAIL,
+	UPLOAD_FILE_SUCCESS,
+	DOWNLOAD_FILE_SUCCESS,
 	LOGOUT
 };
 
@@ -89,6 +94,9 @@ private:
 	void loadUserAccountInfo();
 	void verifyUserRegistrationOrLogin(SOCKET socket);
 	void addUserAccountInfo(string username, string password, SOCKET socket);
+
+	// Login
+	void verifyUserLogin(User* user);
 
 	// Download File
 	void sendAFileToClient(std::string const& indexFile_str, User* user);

@@ -389,6 +389,41 @@ void Program::addUserAccountInfo(string username, string password, SOCKET socket
 	fout.close();
 }
 
+void Program::verifyUserLogin(User* user) {
+	char* username;
+	char* password;
+	uint8_t usernameLen;
+	uint8_t passwordLen;
+
+	receiveData(user, (char*)&usernameLen, sizeof(usernameLen));
+	username = new char[usernameLen + 1];
+	receiveData(user, username, usernameLen + 1);
+	receiveData(user, (char*)&passwordLen, sizeof(passwordLen));
+	password = new char[passwordLen + 1];
+	receiveData(user, password, passwordLen + 1);
+
+	for (size_t i = 0; i < this->UserList.size(); i++) {
+		if (this->UserList[i]->Username == username) {
+			user->Username = username;
+			if (this->UserList[i]->Username == password) {
+				user->Password = password;
+			}
+		}
+	}
+	if (user->Username == "") {
+		sendMsg(user, SendMsgFlag::LOGIN_FAIL_USERNAME, 0, NULL);
+		return;
+	}
+	if (user->Password == "") {
+		sendMsg(user, SendMsgFlag::LOGIN_FAIL_PASSWORD, 0, NULL);
+		return;
+	}
+
+	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 0, NULL);
+	// Send the list of shared files to current user...
+	// Send new user's info to other clients for them to print log...
+}
+
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
 	// Send a reply to the Client (user) first

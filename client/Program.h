@@ -26,9 +26,14 @@ enum class SendMsgFlag : uint8_t
 
 enum class RcvMsgFlag : uint8_t
 {
-	FAIL,
-	SUCCESS,
-	DOWNLOAD_FILE,
+	REGISTER_FAIL = 0,
+	REGISTER_SUCCESS,
+	LOGIN_FAIL_USERNAME,
+	LOGIN_FAIL_PASSWORD,
+	LOGIN_SUCCESS,
+	UPLOAD_FILE_FAIL,
+	UPLOAD_FILE_SUCCESS,
+	DOWNLOAD_FILE_SUCCESS,
 	LOGOUT
 };
 
@@ -79,6 +84,10 @@ private:
 
 	// Register
 	void registerAccount();
+
+	// Login
+	void tryLogin();
+	void receiveLoginResult(RcvMsgFlag result);
 
 	// Download File
 	void sendADownloadFileRequest(uint64_t const& fileIndex);
