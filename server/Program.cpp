@@ -215,12 +215,14 @@ void Program::receiveMsg(User* user)
 			// ...
 			break;
 		case RcvMsgFlag::UPLOAD_FILE: {
-			std::thread uploadFileThread(&Program::receiveAFileFromClient, this, msg, user);
+			std::string uploadedFileName(msg);
+			std::thread uploadFileThread(&Program::receiveAFileFromClient, this, uploadedFileName, user);
 			uploadFileThread.join();	// ...
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
-			std::thread sendFileThread(&Program::sendAFileToClient, this, msg, user);
+			std::string indexFile_str(msg);
+			std::thread sendFileThread(&Program::sendAFileToClient, this, indexFile_str, user);
 			sendFileThread.detach();
 			break;
 		}
@@ -494,13 +496,17 @@ unsigned long Program::fileSizeBytes(string filename) {
 
 void Program::run()
 {
-	this->homeScreen();
-	//std::thread userInteractThread(&Program::homeScreen, this);
-	//userInteractThread.detach();
+	//// debug
+	//this->FileNameList.push_back("bigFile.pdf");
+	//// debug
 
-	//this->initWinsock();
-	//this->initListenSocket();
-	//this->acceptConnections();
+	//this->homeScreen();
+	std::thread userInteractThread(&Program::homeScreen, this);
+	userInteractThread.detach();
+
+	this->initWinsock();
+	this->initListenSocket();
+	this->acceptConnections();
 }
 
 void Program::printStatus() {

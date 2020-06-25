@@ -58,3 +58,4 @@ void printConsole(COLOR textColor, COLOR bgColor, const unsigned int& x, const u
 void printTextAtMid(string const& text, uint64_t const& left, uint64_t const& right);
 string hidePassword();
 wstring s2ws(const std::string& s);
+void ShowConsoleCursor(bool showFlag);

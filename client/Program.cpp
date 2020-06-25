@@ -29,15 +29,22 @@ Program::~Program()
 
 void Program::run()
 {
-	this->homeScreen();
-	/*std::thread userInteractThread(&Program::homeScreen, this);
+	//// debug
+	//File file;
+	//file.fileName = "bigFile.pdf";
+	//file.fileSize = "1235";
+	//this->FileList.push_back(file);
+	//// debug
+
+	// this->homeScreen();
+	std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 
 	this->initWinsock();
 	this->initConnectSocket();
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
-	rcvMsgThread.join();*/
+	rcvMsgThread.join();
 }
 
 void Program::initDataBaseDirectory() {
@@ -275,6 +282,8 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 		uint64_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
+		ShowConsoleCursor(false);
+
 		// Receive file's size
 		this->receiveData((char*)&fileSize, sizeof(fileSize));
 
@@ -286,7 +295,8 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 			fout.write(buffer, this->BUFFER_LEN);
 
 			//Progress
-			printProgressBar((i + 1) * this->BUFFER_LEN / fileSize);
+			if (i % 10 == 0)
+				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
 		this->receiveData(buffer, fileSize % this->BUFFER_LEN);
@@ -296,6 +306,8 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 		string gui = string("Download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(") succeed.");
 		string log = string("Download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(") succeed.");
 		printLog(gui, log);
+
+		ShowConsoleCursor(true);
 
 		// Release resources
 		delete[] buffer;
@@ -316,7 +328,6 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 	const char* msg = fileName.c_str();
 	uint64_t msgLen = fileName.length();
 
-	printLog(flag);
 	this->sendMsg(flag, msg, msgLen);
 
 	// Then, send the file to the Server.
@@ -333,6 +344,13 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		fileSize = fin.tellg();
 		fin.seekg(0, std::ios_base::beg);
 
+		// Log
+		string gui = string("Request to upload ") + shortenFileName(fileName) + string(" (") + numCommas(fileSize) + string(") succeed.");
+		string log = string("Request to upload ") + fileName + string(" (") + numCommas(fileSize) + string(") succeed.");
+		printLog(gui, log);
+
+		ShowConsoleCursor(false);
+
 		// Send file's size
 		this->sendData((char*)&fileSize, sizeof(fileSize));
 
@@ -344,15 +362,18 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 			this->sendData(buffer, this->BUFFER_LEN);
 
 			//Progress
-			printProgressBar((i + 1) * this->BUFFER_LEN / fileSize);
+			if (i % 10 == 0)
+				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		this->sendData(buffer, fileSize % this->BUFFER_LEN);
 
 		printProgressBar(1); // Complete 100%
-		string gui = string("Upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(") succeed.");
-		string log = string("Upload ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(") succeed.");
+		gui = string("Upload ") + shortenFileName(fileName) + string(" (") + numCommas(fileSize) + string(") succeed.");
+		log = string("Upload ") + fileName + string(" (") + numCommas(fileSize) + string(") succeed.");
 		printLog(gui, log);
+
+		ShowConsoleCursor(true);
 
 		// Release resources
 		delete[] buffer;
@@ -605,11 +626,11 @@ void Program::printLog(SendMsgFlag flag) {
 	case SendMsgFlag::PASSWORD:
 		break;
 	case SendMsgFlag::UPLOAD_FILE:
-		content = string("Request to upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		/*content = string("Request to upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
 		cout << content;
 		content = string("Request to upload ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
 		f << content << endl;
-		break;
+		break;*/
 	case SendMsgFlag::DOWNLOAD_FILE:
 		content = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
 		cout << content;
