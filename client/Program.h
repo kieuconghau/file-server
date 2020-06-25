@@ -18,7 +18,7 @@ enum class SendMsgFlag : uint8_t
 {
 	REGISTER,
 	LOGIN,
-	PASSWORD,
+	PASSWORD,	// unused
 	UPLOAD_FILE,
 	DOWNLOAD_FILE,
 	LOGOUT
@@ -83,11 +83,10 @@ private:
 	int sendData(const char* buffer, uint64_t const& len);
 
 	// Register
-	void registerAccount();
+	void tryRegister();
 
 	// Login
 	void tryLogin();
-	void receiveLoginResult(RcvMsgFlag result);
 
 	// Download File
 	void sendADownloadFileRequest(uint64_t const& fileIndex);

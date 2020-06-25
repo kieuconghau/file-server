@@ -206,10 +206,10 @@ void Program::receiveMsg(User* user)
 		switch (flag)
 		{
 		case RcvMsgFlag::REGISTER:
-			// ...
+			this->verifyUserRegister(user);
 			break;
 		case RcvMsgFlag::LOGIN:
-			// ...
+			this->verifyUserLogin(user);
 			break;
 		case RcvMsgFlag::PASSWORD:
 			// ...
@@ -271,122 +271,54 @@ int Program::sendData(User* user, char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-void Program::loadUserAccountInfo() {
-	ifstream fin;
-	fin.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::binary);
-	if (fin.is_open() == false) {
-		this->LastError = "Failed to open user info file to read";
+void Program::verifyUserRegister(User* user) {
+	char* username;
+	char* password;
+	size_t usernameLen;
+	size_t passwordLen;
+
+	receiveData(user, (char*)&usernameLen, sizeof(usernameLen));
+	username = new char[usernameLen + 1];
+	receiveData(user, username, usernameLen + 1);
+	receiveData(user, (char*)&passwordLen, sizeof(passwordLen));
+	password = new char[passwordLen + 1];
+	receiveData(user, password, passwordLen + 1);
+
+	bool username_existed = false;
+	for (size_t i = 0; i < this->UserList.size(); i++) {
+		if (username == this->UserList[i]->Username) {
+			username_existed = true;
+		}
+	}
+
+	if (username_existed == true) {
+		sendMsg(user, SendMsgFlag::REGISTER_FAIL, 0, NULL);
+	}
+
+	sendMsg(user, SendMsgFlag::REGISTER_SUCCESS, 0, NULL);
+	this->addNewUser(user);
+
+	cout << "User <" << user->Username << "> registered an account." << endl;	// PRINT LOG
+}
+
+void Program::addNewUser(User* user) {
+	// Update UserList
+	UserList.push_back(user);
+
+	// Write new user to Server Database
+	ofstream serverDatabase;
+	serverDatabase.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::app | ios::binary);
+	if (serverDatabase.is_open() == false) {
+		this->LastError = "Failed to open server database file to write";
 		this->printLastError();
 		return;
 	}
 
-	fin.seekg(0, ios::end);
-	int fileLength = fin.tellg();
-	fin.seekg(0, ios::beg);
+	serverDatabase.seekp(0, ios::end);
+	serverDatabase.write((char*)user->Username.c_str(), user->Username.length() + 1);
+	serverDatabase.write((char*)user->Password.c_str(), user->Password.length() + 1);
 
-	uint8_t fieldLength;
-	string field;
-	while (fileLength > 0) {
-		User* pUser = new User;
-
-		getline(fin, field, '\0');
-		pUser->Username = field;
-
-		getline(fin, field, '\0');
-		pUser->Password = field;
-
-		UserList.push_back(pUser);
-
-		fileLength -= fin.tellg();		// ???
-	}
-
-	fin.close();
-}
-
-void Program::verifyUserRegistrationOrLogin(SOCKET socket) {
-	string username;
-	string password;
-	uint8_t flag; // Placeholder
-	uint64_t msgLen;
-	char* msg;
-	uint8_t mode;
-	bool result = true;
-
-	recv(socket, (char*)&flag, sizeof(flag), 0);
-	mode = flag;
-	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
-	msg = new char[msgLen + 1];
-	memset(msg, 0, msgLen + 1);
-	recv(socket, (char*)msg, msgLen, 0);
-	username = msg;
-	delete[] msg;
-
-	recv(socket, (char*)&flag, sizeof(flag), 0);
-	if (flag != 2) return;
-	recv(socket, (char*)&msgLen, sizeof(msgLen), 0);
-	msg = new char[msgLen + 1];
-	memset(msg, 0, msgLen + 1);
-	recv(socket, (char*)msg, msgLen, 0);
-	password = msg;
-	delete[] msg;
-
-	switch (mode) {
-	case 0:	// Placeholder	// Registration
-	{
-		result = true;
-		for (uint64_t i = 0; i < UserList.size(); i++) {
-			if (username == UserList[i]->Username) {
-				result = false;
-			}
-		}
-
-		if (result == true) {	// Registration succeeded
-			addUserAccountInfo(username, password, socket);
-			
-			flag = 1;
-			send(socket, (char*)&flag, sizeof(flag), 0);
-
-			cout << "Socket " << socket << " registered succeessfully!" << endl;
-			cout << "Username: " << username << endl;
-		}
-		else {	// Registration failed
-			flag = 0;
-			send(socket, (char*)&flag, sizeof(flag), 0);
-			cout << "Socket " << socket << " failed to register" << endl;
-		}
-
-		break;
-	}
-	case 1:	// Placeholder	// Login
-		break;
-	default:
-		cout << "Illegal flag. Something went wrong..." << endl;
-	}
-}
-
-void Program::addUserAccountInfo(string username, string password, SOCKET socket) {
-	ofstream fout;
-	fout.open(this->DATABASE_PATH + "\\" + this->USER_FILE, ios::app | ios::binary);
-	if (fout.is_open() == false) {
-		this->LastError = "Failed to open user info file to write";
-		this->printLastError();
-		return;
-	}
-
-	User* pUser = new User;
-	pUser->Username = username;
-	pUser->Password = password;
-	pUser->AcceptSocket = socket;
-	UserList.push_back(pUser);
-	OnlineUserList.push_back(pUser);
-
-	fout.seekp(0, ios::end);
-	cout << "File size before writing: " << fout.tellp() << endl;
-
-	fout.write((char*)username.c_str(), username.length() + 1);
-	fout.write((char*)password.c_str(), password.length() + 1);
-
-	fout.close();
+	serverDatabase.close();
 }
 
 void Program::verifyUserLogin(User* user) {
@@ -402,14 +334,17 @@ void Program::verifyUserLogin(User* user) {
 	password = new char[passwordLen + 1];
 	receiveData(user, password, passwordLen + 1);
 
+	int pos;
 	for (size_t i = 0; i < this->UserList.size(); i++) {
 		if (this->UserList[i]->Username == username) {
+			pos = i;
 			user->Username = username;
 			if (this->UserList[i]->Username == password) {
 				user->Password = password;
 			}
 		}
 	}
+
 	if (user->Username == "") {
 		sendMsg(user, SendMsgFlag::LOGIN_FAIL_USERNAME, 0, NULL);
 		return;
@@ -419,9 +354,15 @@ void Program::verifyUserLogin(User* user) {
 		return;
 	}
 
+	delete this->UserList[pos];
+	this->UserList[pos] = user;
+	OnlineUserList.push_back(user);
+
 	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 0, NULL);
 	// Send the list of shared files to current user...
 	// Send new user's info to other clients for them to print log...
+
+	cout << "User <" << user->Username << "> logged in." << endl;	// PRINT LOG
 }
 
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)

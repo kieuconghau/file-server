@@ -28,7 +28,7 @@ enum class RcvMsgFlag : uint8_t
 {
 	REGISTER,
 	LOGIN,
-	PASSWORD,
+	PASSWORD,	// unused
 	UPLOAD_FILE,
 	DOWNLOAD_FILE,
 	LOGOUT
@@ -91,9 +91,9 @@ private:
 	int sendData(User* user, char* buffer, uint64_t const& len);
 
 	// Register
-	void loadUserAccountInfo();
-	void verifyUserRegistrationOrLogin(SOCKET socket);
-	void addUserAccountInfo(string username, string password, SOCKET socket);
+
+	void verifyUserRegister(User* user);
+	void addNewUser(User* user);
 
 	// Login
 	void verifyUserLogin(User* user);

@@ -44,6 +44,20 @@ void Program::run()
 	this->initConnectSocket();
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
+
+	// <DEBUG> (should be replaced by user interface)
+	string choice;
+	cout << "0: Register" << endl;
+	cout << "1: Login" << endl;
+	cout << "Choice: ";	getline(cin, choice);
+	if (choice == "0") {
+		this->tryRegister();
+	}
+	else if (choice == "1") {
+		this->tryLogin();
+	}
+	//  </DEBUG>
+
 	rcvMsgThread.join();
 }
 
@@ -142,14 +156,29 @@ void Program::receiveMsg()
 
 		switch (flag)
 		{
-		case RcvMsgFlag::FAIL: {
-			// ...
-
+		case RcvMsgFlag::REGISTER_FAIL: {
+			cout << "Register failed. Username already exists" << endl;	// PRINT LOG
+			// disconnect to server...
 			break;
 		}
-		case RcvMsgFlag::SUCCESS: {
-			// ...
-
+		case RcvMsgFlag::REGISTER_SUCCESS: {
+			cout << "Register success!" << endl;	// PRINT LOG
+			// disconnect to server...
+			break;
+		}
+		case RcvMsgFlag::LOGIN_FAIL_USERNAME: {
+			cout << "Login failed. Username doesn't exist" << endl;	// PRINT LOG
+			// disconnect to server...
+			break;
+		}
+		case RcvMsgFlag::LOGIN_FAIL_PASSWORD: {
+			cout << "Login failed. Wrong password" << endl;	// PRINT LOG
+			// disconnect to server...
+			break;
+		}
+		case RcvMsgFlag::LOGIN_SUCCESS: {
+			cout << "Login success!" << endl;	// PRINT LOG
+			// Receive the list of shared files from server...
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
@@ -205,87 +234,46 @@ int Program::sendData(const char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-void Program::registerAccount() {
+void Program::tryRegister() {
 	string username;
 	string password;
-	uint8_t flag; // Placeholder
-	uint64_t msgLen;
-	char* msg;
-	bool result = false;
+	size_t usernameLen;
+	size_t passwordLen;
 
-	while (result == false) {
-		cout << "Username: ";	getline(cin, username);
-		cout << "Password: ";	getline(cin, password);
+	// <DEBUG> (should be replaced by user interface)
+	cout << "Username: ";	getline(cin, username);
+	cout << "Password: ";	getline(cin, password);
+	// </DEBUG>
 
-		// Send account info for registration
-		flag = 0; // Placeholder
-		send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
-		msgLen = username.length();
-		send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
-		send(this->UserInfo.ConnectSocket, (char*)username.c_str(), msgLen, 0);
-		flag = 2; // Placeholder
-		send(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
-		msgLen = password.length();
-		send(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
-		send(this->UserInfo.ConnectSocket, (char*)password.c_str(), msgLen, 0);
+	sendMsg(SendMsgFlag::REGISTER, NULL, 0);
 
-		// Receive server's response
-		recv(this->UserInfo.ConnectSocket, (char*)&flag, sizeof(flag), 0);
-
-		switch (flag) {
-		case 0:	// Placeholder	// Registration failed
-		{
-			recv(this->UserInfo.ConnectSocket, (char*)&msgLen, sizeof(msgLen), 0);
-			msg = new char[msgLen + 1];
-			memset(msg, 0, msgLen + 1);
-			recv(this->UserInfo.ConnectSocket, (char*)msg, msgLen, 0);
-			cout << "Registration failed." << endl;
-			cout << msg << endl;
-			delete[] msg;
-			break;
-		}
-		case 1:	// Placeholder	// Registration succeeded
-		{
-			cout << "Registration succeeded." << endl;
-			result = true;
-			break;
-		}
-		default:
-			cout << "Illegal flag. Something went wrong..." << endl;
-		}
-	}
+	usernameLen = username.length();
+	sendData((char*)&usernameLen, sizeof(usernameLen));
+	sendData(username.c_str(), username.length());
+	passwordLen = password.length();
+	sendData((char*)&passwordLen, sizeof(passwordLen));
+	sendData(password.c_str(), password.length());
 }
 
 void Program::tryLogin() {
 	string username;
 	string password;
+	size_t usernameLen;
+	size_t passwordLen;
 
+	// <DEBUG> (should be replaced by user interface)
 	cout << "Username: ";	getline(cin, username);
 	cout << "Password: ";	getline(cin, password);
+	// </DEBUG>
 
 	sendMsg(SendMsgFlag::LOGIN, NULL, 0);
-	sendData(username.c_str(), username.length());
-	sendData(password.c_str(), password.length());
-}
 
-void Program::receiveLoginResult(RcvMsgFlag result) {
-	switch (result)
-	{
-	case RcvMsgFlag::LOGIN_FAIL_USERNAME:
-		cout << "Login failed. Username doesn't exist" << endl;
-		// disconnect to server...
-		break;
-	case RcvMsgFlag::LOGIN_FAIL_PASSWORD:
-		cout << "Login failed. Wrong password" << endl;
-		// disconnect to server...
-		break;
-	case RcvMsgFlag::LOGIN_SUCCESS:
-		cout << "Login success!" << endl;
-		// Receive the list of shared files from server...
-		break;
-	default:
-		break;
-	}
+	usernameLen = username.length();
+	sendData((char*)&usernameLen, sizeof(usernameLen));
+	sendData(username.c_str(), username.length());
+	passwordLen = password.length();
+	sendData((char*)&passwordLen, sizeof(passwordLen));
+	sendData(password.c_str(), password.length());
 }
 
 void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
