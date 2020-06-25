@@ -112,6 +112,7 @@ private:
 	void printFiles(string filename);
 	void printLog();
 	void printClient(string user, bool login);
+	void updateClient(string Username, bool login);
 
 	void test();
 };
