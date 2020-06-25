@@ -13,9 +13,16 @@ enum class SELECTED {
 
 enum class SendMsgFlag : uint8_t
 {
-	FAIL,
-	SUCCESS,
-	DOWNLOAD_FILE,
+	REGISTER_FAIL = 0,
+	REGISTER_SUCCESS,
+	LOGIN_FAIL_USERNAME,
+	LOGIN_FAIL_PASSWORD,
+	LOGIN_SUCCESS,
+	UPLOAD_FILE_FAIL,
+	UPLOAD_FILE_SUCCESS,
+	DOWNLOAD_FILE_SUCCESS,
+	NEW_USER_LOGIN,	// unconfirmed by Hau
+	NEW_FILE_LIST,	// unconfirmed by Hau
 	LOGOUT
 };
 
@@ -23,7 +30,7 @@ enum class RcvMsgFlag : uint8_t
 {
 	REGISTER,
 	LOGIN,
-	PASSWORD,
+	PASSWORD,	// unused
 	UPLOAD_FILE,
 	DOWNLOAD_FILE,
 	LOGOUT
@@ -86,9 +93,12 @@ private:
 	int sendData(User* user, const char* buffer, uint64_t const& len);
 
 	// Register
-	void loadUserAccountInfo();
-	void verifyUserRegistrationOrLogin(SOCKET socket);
-	void addUserAccountInfo(string username, string password, SOCKET socket);
+
+	void verifyUserRegister(User* user);
+	void addNewUser(User* user);
+
+	// Login
+	void verifyUserLogin(User* user);
 
 	// Download File
 	void sendAFileToClient(std::string const& indexFile_str, User* user);
