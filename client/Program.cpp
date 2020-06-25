@@ -28,21 +28,8 @@ Program::~Program()
 }
 
 void Program::run()
-{
-	//// debug
-	File file1;
-	file1.fileName = "bigFile.pdf";
-	file1.fileSize = "1235";
-
-	/*File file2;
-	file2.fileName = "sdad.pdf";
-	file2.fileSize = "321312335";
-	this->FileList.push_back(file2);*/
-	this->FileList.push_back(file1);
-	//// debug
-
-	this->homeScreen();
-	/*std::thread userInteractThread(&Program::homeScreen, this);
+{ 
+	std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 
 	this->initWinsock();
@@ -328,7 +315,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 {
 	std::string fileName = this->getFileNameFromPath(uploadedFilePath);
 
-	// Send a request with the corresponding flag first.
+	// Send a request to the Server with the corresponding flag first.
 	SendMsgFlag flag = SendMsgFlag::UPLOAD_FILE;
 	const char* msg = fileName.c_str();
 	uint64_t msgLen = fileName.length();
@@ -366,7 +353,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 			fin.read(buffer, this->BUFFER_LEN);
 			this->sendData(buffer, this->BUFFER_LEN);
 
-			//Progress
+			// Progress
 			if (i % 10 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}

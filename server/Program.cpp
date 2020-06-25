@@ -238,7 +238,7 @@ void Program::receiveMsg(User* user)
 	}
 }
 
-void Program::sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg)
+void Program::sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, const char* msg)
 {
 	this->sendData(user, (char*)&flag, sizeof(flag));
 	this->sendData(user, (char*)&msgLen, sizeof(msgLen));
@@ -258,7 +258,7 @@ int Program::receiveData(User* user, char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-int Program::sendData(User* user, char* buffer, uint64_t const& len)
+int Program::sendData(User* user, const char* buffer, uint64_t const& len)
 {
 	int iResult;
 
@@ -445,6 +445,8 @@ std::string Program::getPathOfAFile(uint64_t const& indexFile)
 
 void Program::receiveAFileFromClient(std::string const& uploadFileName, User* user)
 {
+	this->MutexUpload.lock();
+
 	std::ofstream fout(this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + uploadFileName, std::ios_base::binary);
 
 	if (fout.is_open()) {
@@ -473,6 +475,8 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		this->LastError = "Unable to create file " + uploadFileName;
 		this->printLastError();
 	}
+
+	this->MutexUpload.unlock();
 }
 
 void Program::printLastError()
@@ -500,7 +504,6 @@ void Program::run()
 	//this->FileNameList.push_back("bigFile.pdf");
 	//// debug
 
-	//this->homeScreen();
 	std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 

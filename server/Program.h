@@ -56,7 +56,7 @@ private:
 	unsigned int line_3; // line of Columm: History Log
 
 	/* ================ PATH ================ */
-	std::string const DATABASE_PATH = "Sever_Database";			// .../Database/
+	std::string const DATABASE_PATH = "Sever_Database";			// .../Server_Database/
 	std::string const SHARED_FILES_FOLDER = "SharedFiles";		// SharedFiles/
 	std::string const LOG_FILE = "logfile.txt";					// logfile.txt
 	std::string const SHARED_FILE_NAMES_FILE = "filename.bin";	// filename.bin
@@ -80,10 +80,10 @@ private:
 	
 	// Transfer
 	void receiveMsg(User* user);
-	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, char* msg);
+	void sendMsg(User* user, SendMsgFlag const& flag, uint64_t const& msgLen, const char* msg);
 
 	int receiveData(User* user, char* buffer, uint64_t const& len);
-	int sendData(User* user, char* buffer, uint64_t const& len);
+	int sendData(User* user, const char* buffer, uint64_t const& len);
 
 	// Register
 	void loadUserAccountInfo();
