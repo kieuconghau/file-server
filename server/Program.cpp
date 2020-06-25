@@ -14,6 +14,13 @@ Program::Program()
 	this->initDataBaseDirectory();
 	this->initUserList();
 	this->initFileNameList();
+
+	/* LOG */
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	f << "================ Date: " << ltm->tm_mday << " - " << 1 + ltm->tm_mon << " - " << (1900 + ltm->tm_year) << " ================" << endl;
+	f.close();
 }
 
 Program::~Program()
@@ -487,12 +494,13 @@ unsigned long Program::fileSizeBytes(string filename) {
 
 void Program::run()
 {
-	std::thread userInteractThread(&Program::homeScreen, this);
-	userInteractThread.detach();
+	this->homeScreen();
+	//std::thread userInteractThread(&Program::homeScreen, this);
+	//userInteractThread.detach();
 
-	this->initWinsock();
-	this->initListenSocket();
-	this->acceptConnections();
+	//this->initWinsock();
+	//this->initListenSocket();
+	//this->acceptConnections();
 }
 
 void Program::printStatus() {
@@ -689,4 +697,18 @@ void Program::test() {
 	f.write("\0", sizeof(char));
 
 	f.close();
+}
+
+void Program::updateClient(string Username, bool login) {
+	unsigned int idx;
+
+	for (int i = 0; i < UserList.size(); i++) {
+		if (Username.compare(UserList[i]->Username) == 0) {
+			idx = i;
+			break;
+		}
+	}
+
+	line_1 = idx + 2;
+	printClient(Username, login);
 }

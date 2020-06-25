@@ -13,6 +13,13 @@ Program::Program()
 	// Init something you need
 	this->initDataBaseDirectory();
 	this->initFileList();
+
+	/* LOG */
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	f << "================ Date: " << ltm->tm_mday << " - " << 1 + ltm->tm_mon << " - " << (1900 + ltm->tm_year) << " ================" << endl;
+	f.close();
 }
 
 Program::~Program()
@@ -140,6 +147,7 @@ void Program::receiveMsg()
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
 			std::string downloadPath = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
+			printLog(flag);
 			this->receiveADownloadFileReply(downloadPath);
 			break;
 		}
@@ -250,6 +258,8 @@ void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
 	std::string msg = std::to_string(fileIndex);
 	uint64_t msgLen = msg.length();
 
+	printLog(flag);
+
 	this->sendMsg(flag, (char*)msg.c_str(), msgLen);
 
 	// Then, waiting for a reply from the Server and receive file.
@@ -267,15 +277,25 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 
 		// Receive file's size
 		this->receiveData((char*)&fileSize, sizeof(fileSize));
+
+		printProgressBar(0);// Start 0%
 		
 		// Receive file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			this->receiveData(buffer, this->BUFFER_LEN);
 			fout.write(buffer, this->BUFFER_LEN);
+
+			//Progress
+			printProgressBar((i + 1) * this->BUFFER_LEN / fileSize);
 		}
 
 		this->receiveData(buffer, fileSize % this->BUFFER_LEN);
 		fout.write(buffer, fileSize % this->BUFFER_LEN);
+
+		printProgressBar(1); // Complete 100%
+		string gui = string("Download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(") succeed.");
+		string log = string("Download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(") succeed.");
+		printLog(gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -296,6 +316,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 	const char* msg = fileName.c_str();
 	uint64_t msgLen = fileName.length();
 
+	printLog(flag);
 	this->sendMsg(flag, msg, msgLen);
 
 	// Then, send the file to the Server.
@@ -315,13 +336,23 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		// Send file's size
 		this->sendData((char*)&fileSize, sizeof(fileSize));
 
+		printProgressBar(0); // Start 0%
+
 		// Send file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			fin.read(buffer, this->BUFFER_LEN);
 			this->sendData(buffer, this->BUFFER_LEN);
+
+			//Progress
+			printProgressBar((i + 1) * this->BUFFER_LEN / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		this->sendData(buffer, fileSize % this->BUFFER_LEN);
+
+		printProgressBar(1); // Complete 100%
+		string gui = string("Upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(") succeed.");
+		string log = string("Upload ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(") succeed.");
+		printLog(gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -360,10 +391,9 @@ void Program::homeScreen() {
 	this->printClient();
 	this->navigateClient();
 
-	this->printProgressBar(1);
 
 	for (int i = 0; i < FileList.size(); i++) {
-		printFile(FileList[i].fileName, FileList[i].fileSize, false);
+		printFile(shortenFileName(FileList[i].fileName), FileList[i].fileSize, false);
 		line_2++;
 	}
 	line_2 = 2;
@@ -517,24 +547,130 @@ void Program::printFile(string name, string size, bool selected) {
 	cout << " " << name; printSpace(27 - name.length() - size.length()); cout << size << " ";
 }
 
-void Program::printLog(string content) {
+void Program::printLog(string gui, string log) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
 	time_t now = time(0);
 	tm* ltm = localtime(&now);
+	string timeline;
 
 	gotoXY(61, line_3);
 
 	// [hh:mm]
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
-	if (ltm->tm_hour < 10) cout << "[0" << ltm->tm_hour;
-	else cout << "[" << ltm->tm_hour;
-	if (ltm->tm_min < 10) cout << ":0" << ltm->tm_min << "] ";
-	else cout << ":" << ltm->tm_min << "] ";
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << content;
+	cout << gui;
+	f << log << endl;
 
 	line_3++;
+	f.close();
+}
+
+void Program::printLog(SendMsgFlag flag) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	string timeline;
+
+	gotoXY(61, line_3);
+
+	// [hh:mm]
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
+
+	setColor(COLOR::WHITE, COLOR::BLACK);
+	string content;
+	
+	switch (flag) {
+	case SendMsgFlag::REGISTER:
+		content = UserInfo.Username + string(" request to register.");
+		break;
+	case SendMsgFlag::LOGIN:
+		content = UserInfo.Username + string(" request to login.");
+		break;
+	case SendMsgFlag::PASSWORD:
+		break;
+	case SendMsgFlag::UPLOAD_FILE:
+		content = string("Request to upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		cout << content;
+		content = string("Request to upload ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		f << content << endl;
+		break;
+	case SendMsgFlag::DOWNLOAD_FILE:
+		content = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		cout << content;
+		content = string("Request to download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		f << content << endl;
+		break;
+
+	case SendMsgFlag::LOGOUT:
+		content = UserInfo.Username + string(" log out.");
+		cout << content;
+		f << content << endl;
+		break;
+
+	default:
+		break;
+	}
+
+	line_3++;
+	f.close();
+}
+
+void Program::printLog(RcvMsgFlag flag) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	string timeline;
+
+	gotoXY(61, line_3);
+
+	// [hh:mm]
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
+
+	setColor(COLOR::WHITE, COLOR::BLACK);
+	string content;
+
+	switch (flag) {
+	case RcvMsgFlag::FAIL:
+		break;
+	case RcvMsgFlag::SUCCESS:
+		break;
+
+	case RcvMsgFlag::DOWNLOAD_FILE:
+		content = string("Start downloading ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		break;
+
+	case RcvMsgFlag::LOGOUT:
+		break;
+	}
+
+	cout << content;
+	f << content << endl;
+
+	line_3++;
+	f.close();
 }
 
 void Program::buttonClient() {
@@ -603,7 +739,8 @@ void Program::navigateClient() {
 
 				if (selected == SELECTED::REGISTER) {
 					// CSOCKET register
-					printLog("Registration success.");
+					
+					// ...
 					
 					// After Register -> Login
 					selected = SELECTED::LOGIN;
@@ -614,12 +751,12 @@ void Program::navigateClient() {
 				
 				if(selected == SELECTED::LOGIN) { 
 					// CSOCKET login
-					printLog("Login success.");
+					
+					// ...
 				}
 
 				this->printStatus();
 
-				printLog("Conected to server.");
 				break;
 			}
 		}
@@ -704,4 +841,18 @@ void Program::printProgressBar(float percentage) {
 	cout << per;
 
 	setColor(COLOR::WHITE, COLOR::BLACK);
+
+	if (abs(1 - percentage) < 0.0000001) {
+		line_3++;
+	}
+}
+
+string Program::shortenFileName(string filename) {
+	if (filename.length() > 18) {
+		string str1 = filename.substr(0, 9);
+		string str2 = filename.substr(filename.length() - 6, 6);
+		filename = str1 + "..." + str2;
+	}
+
+	return filename;
 }

@@ -96,7 +96,11 @@ private:
 
 	void printTitle();
 	void printFile(string name, string size, bool selected);
-	void printLog(string content);
+
+	string shortenFileName(string filename);
+	void printLog(string gui, string log);
+	void printLog(SendMsgFlag flag);
+	void printLog(RcvMsgFlag flag);
 
 	/* ==== Client Register/Login ==== */
 	void buttonClient();
