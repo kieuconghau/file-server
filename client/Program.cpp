@@ -30,21 +30,26 @@ Program::~Program()
 void Program::run()
 {
 	//// debug
-	//File file;
-	//file.fileName = "bigFile.pdf";
-	//file.fileSize = "1235";
-	//this->FileList.push_back(file);
+	File file1;
+	file1.fileName = "bigFile.pdf";
+	file1.fileSize = "1235";
+
+	/*File file2;
+	file2.fileName = "sdad.pdf";
+	file2.fileSize = "321312335";
+	this->FileList.push_back(file2);*/
+	this->FileList.push_back(file1);
 	//// debug
 
-	// this->homeScreen();
-	std::thread userInteractThread(&Program::homeScreen, this);
+	this->homeScreen();
+	/*std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 
 	this->initWinsock();
 	this->initConnectSocket();
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
-	rcvMsgThread.join();
+	rcvMsgThread.join();*/
 }
 
 void Program::initDataBaseDirectory() {
@@ -345,8 +350,8 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		fin.seekg(0, std::ios_base::beg);
 
 		// Log
-		string gui = string("Request to upload ") + shortenFileName(fileName) + string(" (") + numCommas(fileSize) + string(") succeed.");
-		string log = string("Request to upload ") + fileName + string(" (") + numCommas(fileSize) + string(") succeed.");
+		string gui = string("Request to upload ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		string log = string("Request to upload ") + fileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(gui, log);
 
 		ShowConsoleCursor(false);
@@ -369,8 +374,8 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		this->sendData(buffer, fileSize % this->BUFFER_LEN);
 
 		printProgressBar(1); // Complete 100%
-		gui = string("Upload ") + shortenFileName(fileName) + string(" (") + numCommas(fileSize) + string(") succeed.");
-		log = string("Upload ") + fileName + string(" (") + numCommas(fileSize) + string(") succeed.");
+		gui = string("Upload ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		log = string("Upload ") + fileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(gui, log);
 
 		ShowConsoleCursor(true);
@@ -417,7 +422,7 @@ void Program::homeScreen() {
 		printFile(shortenFileName(FileList[i].fileName), FileList[i].fileSize, false);
 		line_2++;
 	}
-	line_2 = 2;
+	line_2 = 0;
 	
 	this->navigateMode();
 }
@@ -620,17 +625,18 @@ void Program::printLog(SendMsgFlag flag) {
 	case SendMsgFlag::REGISTER:
 		content = UserInfo.Username + string(" request to register.");
 		break;
+
 	case SendMsgFlag::LOGIN:
 		content = UserInfo.Username + string(" request to login.");
 		break;
+
 	case SendMsgFlag::PASSWORD:
 		break;
+
 	case SendMsgFlag::UPLOAD_FILE:
-		/*content = string("Request to upload ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-		cout << content;
-		content = string("Request to upload ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-		f << content << endl;
-		break;*/
+		// none
+		break;
+
 	case SendMsgFlag::DOWNLOAD_FILE:
 		content = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
 		cout << content;
@@ -876,4 +882,17 @@ string Program::shortenFileName(string filename) {
 	}
 
 	return filename;
+}
+
+string shortenFileSize(unsigned long size) {
+	uint8_t d = 0;
+
+	while (size > 1000) {
+		size /= 1000;
+		d++;
+	}
+
+	string parameter[] = { " B", "KB", "MB", "GB" };
+
+	return numCommas(size) + " " + parameter[d];
 }

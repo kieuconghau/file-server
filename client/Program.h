@@ -98,6 +98,7 @@ private:
 	void printFile(string name, string size, bool selected);
 
 	string shortenFileName(string filename);
+	string shortenFileSize(unsigned long size);
 	void printLog(string gui, string log);
 	void printLog(SendMsgFlag flag);
 	void printLog(RcvMsgFlag flag);
