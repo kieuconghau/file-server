@@ -73,6 +73,16 @@ void sleep(int x) {
 }
 
 void FixConsoleWindow() {
+    CONSOLE_FONT_INFOEX cfi;
+    cfi.cbSize = sizeof(cfi);
+    cfi.nFont = 0;
+    cfi.dwFontSize.X = 8;                   // Width of each character in the font
+    cfi.dwFontSize.Y = 16;                  // Height
+    cfi.FontFamily = FF_DONTCARE;
+    cfi.FontWeight = FW_NORMAL;
+    std::wcscpy(cfi.FaceName, L"Consolas"); // Choose font
+    SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
+
     HWND consoleWindow = GetConsoleWindow();
     LONG style = GetWindowLong(consoleWindow, GWL_STYLE);
     style = style & ~(WS_MAXIMIZEBOX) & ~(WS_THICKFRAME);

@@ -22,14 +22,15 @@ Program::~Program()
 
 void Program::run()
 {
-	std::thread userInteractThread(&Program::homeScreen, this);
+	this->homeScreen();
+	/*std::thread userInteractThread(&Program::homeScreen, this);
 	userInteractThread.detach();
 
 	this->initWinsock();
 	this->initConnectSocket();
 
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
-	rcvMsgThread.join();
+	rcvMsgThread.join();*/
 }
 
 void Program::initDataBaseDirectory() {
@@ -357,7 +358,6 @@ void Program::homeScreen() {
 	this->printTitle();
 	this->printMode();
 	this->printClient();
-	this->printStatus();
 	this->navigateClient();
 
 	for (int i = 0; i < FileList.size(); i++) {
@@ -493,7 +493,7 @@ string Program::enterPath() {
 
 void Program::printTitle() {
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
-	gotoXY(30, 1); printSpace(8); cout << "File Shared"; printSpace(8); 
+	gotoXY(30, 1); printSpace(8); cout << " File Shared "; printSpace(8); 
 	
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
 	cout << "|"; 
