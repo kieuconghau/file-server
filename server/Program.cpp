@@ -445,6 +445,8 @@ std::string Program::getPathOfAFile(uint64_t const& indexFile)
 
 void Program::receiveAFileFromClient(std::string const& uploadFileName, User* user)
 {
+	this->MutexUpload.lock();
+
 	std::ofstream fout(this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + uploadFileName, std::ios_base::binary);
 
 	if (fout.is_open()) {
@@ -473,6 +475,8 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		this->LastError = "Unable to create file " + uploadFileName;
 		this->printLastError();
 	}
+
+	this->MutexUpload.unlock();
 }
 
 void Program::printLastError()

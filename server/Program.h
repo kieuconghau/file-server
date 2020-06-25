@@ -56,7 +56,7 @@ private:
 	unsigned int line_3; // line of Columm: History Log
 
 	/* ================ PATH ================ */
-	std::string const DATABASE_PATH = "Sever_Database";			// .../Database/
+	std::string const DATABASE_PATH = "Sever_Database";			// .../Server_Database/
 	std::string const SHARED_FILES_FOLDER = "SharedFiles";		// SharedFiles/
 	std::string const LOG_FILE = "logfile.txt";					// logfile.txt
 	std::string const SHARED_FILE_NAMES_FILE = "filename.bin";	// filename.bin
