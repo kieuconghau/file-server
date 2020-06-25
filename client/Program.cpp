@@ -83,10 +83,6 @@ void Program::initConnectSocket()
 
 	this->UserInfo.ConnectSocket = INVALID_SOCKET;
 	
-	// Log
-	string content = string("Login to Server IP: ") + string(this->ServerIP);
-	printLog(content, content);
-
 	for (auto ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 		this->UserInfo.ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
@@ -97,6 +93,10 @@ void Program::initConnectSocket()
 		}
 
 		iResult = connect(this->UserInfo.ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+
+		// Log
+		string content = string("Login to Server IP: ") + string(this->ServerIP);
+		printLog(content, content);
 
 		if (iResult == SOCKET_ERROR) {
 			closesocket(this->UserInfo.ConnectSocket);
@@ -740,7 +740,6 @@ void Program::loginClient() {
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);	this->ServerIP = input.c_str();
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
-
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 12); cout << "Username: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, this->UserInfo.Username);
