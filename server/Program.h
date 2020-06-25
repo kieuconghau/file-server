@@ -130,6 +130,8 @@ private:
 	void updateClient(string Username, bool login);
 	void printProgressBar(float percentage);
 
+	void updateSharedFilesNamesFile(string filename);
+
 	void test();
 };
 

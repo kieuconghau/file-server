@@ -308,17 +308,21 @@ void Program::verifyUserRegister(User* user) {
 	for (size_t i = 0; i < this->UserList.size(); i++) {
 		if (username == this->UserList[i]->Username) {
 			username_existed = true;
+			return;
 		}
 	}
 
 	if (username_existed == true) {
 		sendMsg(user, SendMsgFlag::REGISTER_FAIL, 0, NULL);
+		return;
 	}
 
 	sendMsg(user, SendMsgFlag::REGISTER_SUCCESS, 0, NULL);
 	this->addNewUser(user);
 
-	cout << "User <" << user->Username << "> registered an account." << endl;	// PRINT LOG
+	// Log
+	string gui_1 = "<" + user->Username + "> registered an account.";	// PRINT LOG
+	printLog(gui_1, gui_1);
 
 	delete[] username;
 	delete[] password;
@@ -327,6 +331,7 @@ void Program::verifyUserRegister(User* user) {
 void Program::addNewUser(User* user) {
 	// Update UserList
 	UserList.push_back(user);
+	printClient(user->Username, false);
 
 	// Write new user to Server Database
 	ofstream serverDatabase;
@@ -381,6 +386,9 @@ void Program::verifyUserLogin(User* user) {
 	this->UserList[pos] = user;
 	OnlineUserList.push_back(user);
 
+	// Gui
+	updateClient(user->Username, true);
+
 	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 0, NULL);
 
 	// Send the list of shared files to current user...
@@ -395,7 +403,9 @@ void Program::verifyUserLogin(User* user) {
 		sendData(OnlineUserList[i], username, usernameLen + 1);
 	}
 
-	cout << "User <" << user->Username << "> logged in." << endl;	// PRINT LOG
+	// Log
+	string gui_1 = "<" + user->Username + "> logged in.";	
+	printLog(gui_1, gui_1);
 
 	delete[] username;
 	delete[] password;
@@ -530,6 +540,10 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		gui = string("Recieve ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		log = string("Recieve") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(string("From ") + user->Username + string(":"), gui, log);
+
+		// Write database, update gui
+		this->updateSharedFilesNamesFile(uploadFileName);
+		this->printFiles(uploadFileName);
 
 		// Release resources
 		delete[] buffer;
@@ -756,7 +770,7 @@ void Program::printLog(string gui, string log) {
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << gui;
+	cout << gui << std::flush;
 	f << log << endl;
 
 	line_3++;
@@ -783,9 +797,9 @@ void Program::printLog(string user, string gui, string log) {
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << user; line_3++;
+	cout << user << std::flush; line_3++;
 	gotoXY(69, line_3);
-	cout << gui;
+	cout << gui << std::flush;
 
 	f << user << endl << log << endl;
 
@@ -809,7 +823,7 @@ void Program::test() {
 }
 
 void Program::updateClient(string Username, bool login) {
-	unsigned int idx;
+	unsigned int idx = 0;
 
 	for (int i = 0; i < UserList.size(); i++) {
 		if (Username.compare(UserList[i]->Username) == 0) {
@@ -820,6 +834,7 @@ void Program::updateClient(string Username, bool login) {
 
 	line_1 = idx + 2;
 	printClient(Username, login);
+	line_1 = UserList.size() - 1 + 2;
 }
 
 void Program::printProgressBar(float percentage) {
@@ -827,21 +842,36 @@ void Program::printProgressBar(float percentage) {
 	int width = (int)(percentage * 29);
 
 	gotoXY(69, line_pb);
-	cout << "Progress ";
+	cout << "Progress " << std::flush;
 
 	gotoXY(78, line_pb);
-	cout << "[                             ]";
+	cout << "[                             ]" << std::flush;
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
 	gotoXY(79, line_pb);
 	for (int i = 0; i < width; i++) {
-		cout << "|";
+		cout << "|" << std::flush;
 	}
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
 	string per = numCommas(val) + "%";
 	gotoXY((int)((79 + 108 - per.length()) / 2), line_pb);
-	cout << per;
+	cout << per << std::flush;
 
 	setColor(COLOR::WHITE, COLOR::BLACK);
+}
+
+void Program::updateSharedFilesNamesFile(string filename) {
+	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE,
+		std::fstream::in | std::fstream::binary);
+
+	if (!f.is_open()) {
+		this->LastError = "Failed to open server database file to write";
+		this->printLastError();
+		return;
+	}
+
+	f.write((char*)filename.c_str(), filename.length() + 1);
+
+	f.close();
 }

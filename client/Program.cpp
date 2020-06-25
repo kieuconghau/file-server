@@ -86,6 +86,12 @@ void Program::initConnectSocket()
 	if (iResult != 0) {
 		this->LastError = "getaddrinfo() failed: " + std::to_string(iResult);
 		this->printLastError();
+
+		// Log
+		string gui_2 = string("Connection fail.");
+		string gui_1 = string("Server IP: ") + string(this->ServerIP);
+		printLog(gui_1, gui_2, gui_2);
+
 		return;
 	}
 
@@ -103,8 +109,9 @@ void Program::initConnectSocket()
 		iResult = connect(this->UserInfo.ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 
 		// Log
-		string content = string("Login to Server IP: ") + string(this->ServerIP);
-		printLog(content, content);
+		string gui_2 = string("Connection success.");
+		string gui_1 = string("Server IP: ") + string(this->ServerIP);
+		printLog(gui_1, gui_2, gui_2);
 
 		if (iResult == SOCKET_ERROR) {
 			closesocket(this->UserInfo.ConnectSocket);
@@ -147,27 +154,65 @@ void Program::receiveMsg()
 		switch (flag)
 		{
 		case RcvMsgFlag::REGISTER_FAIL: {
-			cout << "Register failed. Username already exists" << endl;	// PRINT LOG
+			// Log
+			string gui_1 = "Register failed.Username already exists.";
+			printLog(gui_1, gui_1);
+
+			// Register_Fail -> selected Login/Register
+			this->printClient();
+			this->navigateClient();
+
 			// disconnect to server...
+
 			break;
 		}
 		case RcvMsgFlag::REGISTER_SUCCESS: {
-			cout << "Register success!" << endl;	// PRINT LOG
+			// Log
+			string gui_1 = "<" + UserInfo.Username + ">" + " registered success.";
+			printLog(gui_1, gui_1);
+
+			// After Register -> Login
+			selected = SELECTED::LOGIN;
+			this->buttonClient();
+			this->printClient();
+			this->loginClient();
+			this->tryLogin(&UserInfo);
+
 			// disconnect to server...
 			break;
 		}
 		case RcvMsgFlag::LOGIN_FAIL_USERNAME: {
-			cout << "Login failed. Username doesn't exist" << endl;	// PRINT LOG
+			// Log
+			string gui_1 = "Login failed. Username doesn't exist";
+			printLog(gui_1, gui_1);
+
+			// Login_Fail -> selected Login/Register
+			this->printClient();
+			this->navigateClient();
+
 			// disconnect to server...
 			break;
 		}
 		case RcvMsgFlag::LOGIN_FAIL_PASSWORD: {
-			cout << "Login failed. Wrong password" << endl;	// PRINT LOG
+			// Log
+			string gui_1 = "Login failed. Wrong password";
+			printLog(gui_1, gui_1);
+
+			// Login_Fail -> selected Login/Register
+			this->printClient();
+			this->navigateClient();
+
 			// disconnect to server...
 			break;
 		}
 		case RcvMsgFlag::LOGIN_SUCCESS: {
-			cout << "Login success!" << endl;	// PRINT LOG
+			// Log
+			string gui_1 = "<" + UserInfo.Username + ">" + " logged in success.";
+			printLog(gui_1, gui_1);
+
+			// Gui
+			this->printStatus();
+
 			// Receive the list of shared files from server...
 			break;
 		}
@@ -270,7 +315,10 @@ void Program::writeLogNewLogin() {
 	receiveData(username, usernameLen + 1);
 
 	string usernameString(username);
-	cout << "User <" << usernameString << "> logged in." << endl;	// PRINT LOG
+
+	// Log
+	string gui_1 = "<" + usernameString + "> logged in.";	// PRINT LOG
+	printLog(gui_1, gui_1);
 }
 
 void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
@@ -441,6 +489,7 @@ void Program::printLastError()
 void Program::homeScreen() {
 	this->printTitle();
 	this->printMode();
+	this->printIP();
 	this->printClient();
 	this->navigateClient();
 
@@ -655,9 +704,9 @@ void Program::printLog(string gui_1, string gui_2, string log) {
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << gui_2; line_3++;
+	cout << gui_1; line_3++;
 	gotoXY(69, line_3);
-	cout << gui_1;
+	cout << gui_2;
 
 	f << gui_1 << endl << log << endl;
 
@@ -685,6 +734,14 @@ void Program::buttonClient() {
 	setColor(COLOR::BLACK, COLOR::BLACK);
 }
 
+void Program::printIP() {
+	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
+	gotoXY(0, 11); cout << "|                            |";
+
+	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
+	gotoXY(1, 11); cout << "ServerIP:";
+}
+
 void Program::printClient() {
 	gotoXY(0, 9); 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
@@ -693,13 +750,11 @@ void Program::printClient() {
 	buttonClient();
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
-	gotoXY(0, 11); cout << "|                            |";
 	gotoXY(0, 12); cout << "|                            |";
 	gotoXY(0, 13); cout << "|                            |";
 	gotoXY(0, 14); cout << "'============================'";
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
-	gotoXY(1, 11); cout << "ServerIP:";
 	gotoXY(1, 12); cout << "Username:";
 	gotoXY(1, 13); cout << "Password:";
 
@@ -726,28 +781,21 @@ void Program::navigateClient() {
 
 			// ============= ENTER =============
 			if (GetKeyState(VK_RETURN) & 0x8000) {
-
-				this->loginClient();
-
-				if (selected == SELECTED::REGISTER) {
-					// CSOCKET register
-					
-					// ...
-					
-					// After Register -> Login
-					selected = SELECTED::LOGIN;
-					this->buttonClient();
-					this->printClient();
-					this->loginClient();
+				if (ServerIP != "") {
+					this->inputIP(); // make sure ip right 
 				}
 				
-				if(selected == SELECTED::LOGIN) { 
-					// CSOCKET login
-					
-					// ...
-				}
+				if (selected == SELECTED::REGISTER) {
+					this->loginClient();
 
-				this->printStatus();
+					this->tryRegister(&UserInfo); // make sure register success
+					
+				}
+				else {
+					this->loginClient();
+
+					this->tryLogin(&UserInfo); // make sure login success
+				}
 
 				break;
 			}
@@ -756,7 +804,7 @@ void Program::navigateClient() {
 	}
 }
 
-void Program::loginClient() {
+void Program::inputIP() {
 	std::string input;
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
@@ -766,7 +814,10 @@ void Program::loginClient() {
 	this->initConnectSocket();
 	std::thread rcvMsgThread(&Program::receiveMsg, this);
 	rcvMsgThread.detach();
+}
 
+void Program::loginClient() {
+	
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 12); cout << "Username: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, this->UserInfo.Username);
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 12); cout << "Username: ";

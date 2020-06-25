@@ -117,8 +117,10 @@ private:
 
 	/* ==== Client Register/Login ==== */
 	void buttonClient();
+	void printIP();
 	void printClient();
 	void navigateClient();
+	void inputIP();
 	void loginClient();
 	/* =============================== */
 
