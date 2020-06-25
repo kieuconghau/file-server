@@ -599,7 +599,7 @@ void Program::homeScreen() {
 
 	gotoXY(0, 1);
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
-	printSpace(11); cout << "Clients"; printSpace(11); cout << "|"; printSpace(8); cout << "File Shared"; printSpace(8); cout << "|"; printSpace(20); cout << "History Log"; printSpace(19);
+	printSpace(11); cout << "Clients"; printSpace(11); cout << "|"; printSpace(8); cout << " File Shared "; printSpace(8); cout << "|"; printSpace(20); cout << "History Log"; printSpace(19);
 
 	printStatus();
 
@@ -613,10 +613,7 @@ void Program::homeScreen() {
 		printFiles(FileNameList[i]);
 	}
 
-	printLog();
-
 	navigateStatus();
-
 }
 
 void Program::printClient(string user, bool login) {
@@ -676,23 +673,127 @@ string Program::shortenFileName(string filename) {
 	return filename;
 }
 
-void Program::printLog() {
+void Program::printLog(string gui, string log) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
 	time_t now = time(0);
 	tm* ltm = localtime(&now);
+	string timeline;
 
 	gotoXY(61, line_3);
 
 	// [hh:mm]
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
-	if (ltm->tm_hour < 10) cout << "[0" << ltm->tm_hour;
-	else cout << "[" << ltm->tm_hour;
-	if (ltm->tm_min < 10) cout << ":0" << ltm->tm_min << "] ";
-	else cout << ":" << ltm->tm_min << "] ";
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
+	cout << gui;
+	f << log << endl;
+
+	line_3++;
+	f.close();
 }
 
+void Program::printLog(SendMsgFlag flag) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	string timeline;
+
+	gotoXY(61, line_3);
+
+	// [hh:mm]
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
+
+	setColor(COLOR::WHITE, COLOR::BLACK);
+	string content;
+
+	switch (flag) {
+	case SendMsgFlag::FAIL:
+		break;
+
+	case SendMsgFlag::SUCCESS:
+		break;
+
+	case SendMsgFlag::DOWNLOAD_FILE:
+		/*content = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		cout << content;
+		content = string("Request to download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		f << content << endl;*/
+		break;
+
+	case SendMsgFlag::LOGOUT:
+		break;
+
+	default:
+		break;
+	}
+
+	line_3++;
+	f.close();
+}
+
+void Program::printLog(RcvMsgFlag flag) {
+	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	string timeline;
+
+	gotoXY(61, line_3);
+
+	// [hh:mm]
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
+	else timeline = string("[") + numCommas(ltm->tm_hour);
+	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
+	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
+
+	cout << timeline;
+	f << timeline;
+
+	setColor(COLOR::WHITE, COLOR::BLACK);
+	string content;
+
+	switch (flag) {
+	case RcvMsgFlag::REGISTER:
+		break;
+	case RcvMsgFlag::LOGIN:
+		break;
+
+	case RcvMsgFlag::PASSWORD:
+		break;
+
+	case RcvMsgFlag::UPLOAD_FILE:
+		break;
+
+	case RcvMsgFlag::DOWNLOAD_FILE:
+		break;
+
+	case RcvMsgFlag::LOGOUT:
+		break;
+	}
+
+
+
+	cout << content;
+	f << content << endl;
+
+	line_3++;
+	f.close();
+}
 void Program::test() {
 	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE, 
 		std::fstream::in | std::fstream::out | std::fstream::app | std::fstream::binary);
@@ -721,3 +822,4 @@ void Program::updateClient(string Username, bool login) {
 	line_1 = idx + 2;
 	printClient(Username, login);
 }
+

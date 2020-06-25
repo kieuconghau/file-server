@@ -110,7 +110,11 @@ private:
 	void printStatus();
 	void navigateStatus();
 	void printFiles(string filename);
-	void printLog();
+
+	void printLog(string gui, string log);
+	void printLog(SendMsgFlag flag);
+	void printLog(RcvMsgFlag flag);
+
 	void printClient(string user, bool login);
 	void updateClient(string Username, bool login);
 
