@@ -110,5 +110,6 @@ private:
 	string enterPath();
 
 	void printStatus();
+	void printProgressBar(float percentage);
 };
 

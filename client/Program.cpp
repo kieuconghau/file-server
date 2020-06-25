@@ -35,7 +35,7 @@ void Program::run()
 
 void Program::initDataBaseDirectory() {
 	if (CreateDirectory(s2ws(DATABASE_PATH).c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
-		// ...
+		CreateDirectory(s2ws(DATABASE_PATH + "\\" + DOWNLOAD_FOLDER).c_str(), NULL);
 	}
 	else return;
 }
@@ -360,6 +360,8 @@ void Program::homeScreen() {
 	this->printClient();
 	this->navigateClient();
 
+	this->printProgressBar(1);
+
 	for (int i = 0; i < FileList.size(); i++) {
 		printFile(FileList[i].fileName, FileList[i].fileSize, false);
 		line_2++;
@@ -677,5 +679,29 @@ void Program::printStatus() {
 		}
 
 	}
+	setColor(COLOR::WHITE, COLOR::BLACK);
+}
+
+void Program::printProgressBar(float percentage) {
+	int val = (int)(percentage * 100);
+	int width = (int)(percentage * 29);
+
+	gotoXY(69, line_3);
+	cout << "Progress ";
+
+	gotoXY(78, line_3);
+	cout << "[                             ]";
+	
+	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
+	gotoXY(79, line_3);
+	for (int i = 0; i < width; i++) {
+		cout << "|";
+	}
+
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	string per = numCommas(val) + "%";
+	gotoXY((int)((79 + 108 - per.length())/2), line_3);
+	cout << per;
+
 	setColor(COLOR::WHITE, COLOR::BLACK);
 }
