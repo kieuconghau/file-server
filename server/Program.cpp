@@ -7,7 +7,7 @@ Program::Program()
 	FixConsoleWindow();
 
 	/* GUI */
-	line_1 = line_2 = line_3 = 2;
+	line_1 = line_2 = line_3 = line_pb = 2;
 	selected = SELECTED::ONLINE;
 
 	//Init something you need
@@ -226,12 +226,22 @@ void Program::receiveMsg(User* user)
 			break;
 		case RcvMsgFlag::UPLOAD_FILE: {
 			std::string uploadedFileName(msg);
+
+			// Log
+			string content = user->Username + string(": ") + string("Request to upload ") + shortenFileName(uploadedFileName) + string(".");
+			printLog(content, content);
+
 			std::thread uploadFileThread(&Program::receiveAFileFromClient, this, uploadedFileName, user);
 			uploadFileThread.join();	// ...
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
 			std::string indexFile_str(msg);
+
+			// Log
+			string content = user->Username + string(": ") + string("Request to download ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(".");
+			printLog(content, content);
+
 			std::thread sendFileThread(&Program::sendAFileToClient, this, indexFile_str, user);
 			sendFileThread.detach();
 			break;
@@ -408,6 +418,10 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 
 	this->sendMsg(user, flag, msgLen, msg);
 
+	// Log
+	string content = string("Accept ") + user->Username + string("'s download request.");
+	printLog(content, content);
+
 	// Then, send a file to that Client (user)
 	std::string filePath = this->getPathOfAFile(stoi(indexFile_str));
 
@@ -427,13 +441,37 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		// Send file's size
 		this->sendData(user, (char*)&fileSize, sizeof(fileSize));
 
+		// Log
+		string gui = string("Start sending ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		string log = string("Start sending ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("To ") + user->Username + string(":"), gui, log);
+
+		ShowConsoleCursor(false);
+		line_pb = line_3;
+		line_3++;
+
+		printProgressBar(0);
+
 		// Send file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			fin.read(buffer, this->BUFFER_LEN);
 			this->sendData(user, buffer, this->BUFFER_LEN);
+
+			// Progress
+			if (i % 10 == 0)
+				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		this->sendData(user, buffer, fileSize % this->BUFFER_LEN);
+
+		printProgressBar(1); // Complete 100%
+
+		ShowConsoleCursor(true);
+
+		// Log
+		string gui = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		string log = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		printLog(string("To ") + user->Username + string(":"), gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -468,14 +506,38 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		// Receive file's size
 		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
 
+		// Log
+		string gui = string("Start recieving ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		string log = string("Start recieving ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("From ") + user->Username + string(":"), gui, log);
+
+		ShowConsoleCursor(false);
+		line_pb = line_3;
+		line_3++;
+
+		printProgressBar(0);
+
 		// Receive file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			this->receiveData(user, buffer, this->BUFFER_LEN);
 			fout.write(buffer, this->BUFFER_LEN);
+
+			// Progress
+			if (i % 10 == 0)
+				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
 		this->receiveData(user, buffer, fileSize % this->BUFFER_LEN);
 		fout.write(buffer, fileSize % this->BUFFER_LEN);
+
+		printProgressBar(1); // Complete 100%
+
+		ShowConsoleCursor(true);
+
+		// Log
+		gui = string("Recieve ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		log = string("Recieve") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		printLog(string("From ") + user->Username + string(":"), gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -669,6 +731,19 @@ string Program::shortenFileName(string filename) {
 	return filename;
 }
 
+string Program::shortenFileSize(unsigned long size) {
+	uint8_t d = 0;
+
+	while (size > 1000) {
+		size /= 1000;
+		d++;
+	}
+
+	string parameter[] = { " B", "KB", "MB", "GB" };
+
+	return numCommas(size) + " " + parameter[d];
+}
+
 void Program::printLog(string gui, string log) {
 	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
 	time_t now = time(0);
@@ -696,7 +771,7 @@ void Program::printLog(string gui, string log) {
 	f.close();
 }
 
-void Program::printLog(SendMsgFlag flag) {
+void Program::printLog(string user, string gui, string log) {
 	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
 	time_t now = time(0);
 	tm* ltm = localtime(&now);
@@ -714,82 +789,18 @@ void Program::printLog(SendMsgFlag flag) {
 	cout << timeline;
 	f << timeline;
 
+	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	string content;
+	cout << user; line_3++;
+	gotoXY(69, line_3);
+	cout << gui;
 
-	switch (flag) {
-	case SendMsgFlag::FAIL:
-		break;
-
-	case SendMsgFlag::SUCCESS:
-		break;
-
-	case SendMsgFlag::DOWNLOAD_FILE:
-		/*content = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-		cout << content;
-		content = string("Request to download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-		f << content << endl;*/
-		break;
-
-	case SendMsgFlag::LOGOUT:
-		break;
-
-	default:
-		break;
-	}
+	f << user << endl << log << endl;
 
 	line_3++;
 	f.close();
 }
 
-void Program::printLog(RcvMsgFlag flag) {
-	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
-	time_t now = time(0);
-	tm* ltm = localtime(&now);
-	string timeline;
-
-	gotoXY(61, line_3);
-
-	// [hh:mm]
-	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
-	if (ltm->tm_hour < 10) timeline = string("[0") + numCommas(ltm->tm_hour);
-	else timeline = string("[") + numCommas(ltm->tm_hour);
-	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
-	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
-
-	cout << timeline;
-	f << timeline;
-
-	setColor(COLOR::WHITE, COLOR::BLACK);
-	string content;
-
-	switch (flag) {
-	case RcvMsgFlag::REGISTER:
-		break;
-	case RcvMsgFlag::LOGIN:
-		break;
-
-	case RcvMsgFlag::PASSWORD:
-		break;
-
-	case RcvMsgFlag::UPLOAD_FILE:
-		break;
-
-	case RcvMsgFlag::DOWNLOAD_FILE:
-		break;
-
-	case RcvMsgFlag::LOGOUT:
-		break;
-	}
-
-
-
-	cout << content;
-	f << content << endl;
-
-	line_3++;
-	f.close();
-}
 void Program::test() {
 	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE, 
 		std::fstream::in | std::fstream::out | std::fstream::app | std::fstream::binary);
@@ -819,3 +830,26 @@ void Program::updateClient(string Username, bool login) {
 	printClient(Username, login);
 }
 
+void Program::printProgressBar(float percentage) {
+	int val = (int)(percentage * 100);
+	int width = (int)(percentage * 29);
+
+	gotoXY(69, line_pb);
+	cout << "Progress ";
+
+	gotoXY(78, line_pb);
+	cout << "[                             ]";
+
+	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
+	gotoXY(79, line_pb);
+	for (int i = 0; i < width; i++) {
+		cout << "|";
+	}
+
+	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK);
+	string per = numCommas(val) + "%";
+	gotoXY((int)((79 + 108 - per.length()) / 2), line_pb);
+	cout << per;
+
+	setColor(COLOR::WHITE, COLOR::BLACK);
+}

@@ -154,3 +154,14 @@ wstring s2ws(const std::string& s) {
     delete[] buf;
     return r;
 }
+
+void ShowConsoleCursor(bool showFlag)
+{
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    CONSOLE_CURSOR_INFO     cursorInfo;
+
+    GetConsoleCursorInfo(output, &cursorInfo);
+    cursorInfo.bVisible = showFlag; // set cursor's visibility
+    SetConsoleCursorInfo(output, &cursorInfo);
+}
