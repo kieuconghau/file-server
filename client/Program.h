@@ -64,6 +64,7 @@ private:
 
 	std::string LastError;
 	std::string LastUploadedFilePath;
+	std::string dirDownFolder;
 
 	bool ExitFlag;
 
@@ -140,6 +141,7 @@ private:
 	void navigateMode();
 	string enterPath();
 	bool isFilePathExist(const std::string& name);
+	bool dirExists(const std::string& dirName_in);
 
 	void printStatus();
 	void printProgressBar(float percentage);
