@@ -204,8 +204,10 @@ void Program::receiveMsg(User* user)
 
 	while (true) {
 		shutdownFlag = this->receiveData(user, (char*)&flag, sizeof(flag));
-		if (shutdownFlag == 0)	// Check if the Client (user) shutdowns
+		if (shutdownFlag == 0) {	// Check if the Client (user) shutdowns
+			this->receiveALogoutRequestFromClient(user);
 			break;
+		}
 
 		this->receiveData(user, (char*)&msgLen, sizeof(msgLen));
 		msg = new char[msgLen + 1];
@@ -624,6 +626,46 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	}
 
 	this->MutexUpload.unlock();
+}
+
+void Program::receiveALogoutRequestFromClient(User* user)
+{
+	// ... user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
+
+	// Discard 'user' from the OnlineUserList.
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		if (user == this->OnlineUserList[i]) {
+			this->OnlineUserList.erase(this->OnlineUserList.begin() + i);
+			break;
+		}
+	}
+
+	// Send a notification to all Online Clients (broadcast).
+	SendMsgFlag flag = SendMsgFlag::LOGOUT;
+	string msg = user->Username;
+	uint64_t msgLen = msg.length();
+
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+	}
+
+	// Reply: Server close send.
+	int iResult = shutdown(user->AcceptSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
+		this->printLastError();
+	}
+
+	// Server close rcv.
+	closesocket(user->AcceptSocket);
+
+	// Log
+	this->printLog(user->Username + " logged out.", user->Username + " logged out.");
+
+	// ... Update GUI here: update ONL/OFF list.
+	
+
+	// ... user->MutexSending.unlock();
 }
 
 void Program::printLastError()

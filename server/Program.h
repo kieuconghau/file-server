@@ -109,6 +109,9 @@ private:
 	// Upload File
 	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
 
+	// Logout
+	void receiveALogoutRequestFromClient(User* user);
+
 	// Handle error
 	void printLastError();
 

@@ -65,6 +65,8 @@ private:
 	std::string LastError;
 	std::string LastUploadedFilePath;
 
+	bool ExitFlag;
+
 	/* ================ GUI ================ */
 	int          line_2;	// line of Columm : File Uploaded
 	int          line_3;	// line of Columm : History Log
@@ -107,6 +109,9 @@ private:
 
 	// Init File List
 	void initSharedFileList(std::string const& initFileContent);
+
+	// Logout
+	void sendALogoutRequest();
 
 	// Handle error
 	void printLastError();
