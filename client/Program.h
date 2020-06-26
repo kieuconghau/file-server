@@ -37,7 +37,6 @@ enum class RcvMsgFlag : uint8_t
 	NEW_USER_LOGIN,
 	NEW_FILE_LIST,
 	NEW_FILE,
-	INIT_FILE_LIST,
 	LOGOUT
 };
 

@@ -447,7 +447,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		// Add this file to the Database.
 		File file;
 		file.fileName = fileName;
-		file.fileSize = std::to_string(fileSize);
+		file.fileSize = this->shortenFileSize(fileSize);
 		this->FileList.push_back(file);
 
 		// Send file's size
