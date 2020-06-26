@@ -815,7 +815,7 @@ void Program::navigateMode() {
 			// ============= ESC =============
 			if (GetKeyState(VK_ESCAPE) & 0x8000) {
 				if (FileList.size() > 0) {
-					printFile(FileList[0].fileName, FileList[0].fileSize, false); // reset the previous line back to normal
+					printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
 					line_2 = 0;									  // reset line back to the top of FileList
 				}
 				selected = SELECTED::UPLOAD;
