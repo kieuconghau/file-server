@@ -9,6 +9,7 @@
 #include <WS2tcpip.h>
 #include <iostream>
 #include <string>
+#include <mutex>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -24,5 +25,6 @@ private:
     std::string Username;
     std::string Password;
     SOCKET AcceptSocket;
+    std::mutex MutexSending;
 };
 

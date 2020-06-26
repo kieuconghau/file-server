@@ -36,6 +36,7 @@ enum class RcvMsgFlag : uint8_t
 	DOWNLOAD_FILE_SUCCESS,
 	NEW_USER_LOGIN,	// unconfirmed by Hau
 	NEW_FILE_LIST,	// unconfirmed by Hau
+	NEW_FILE,		// unconfirmed
 	LOGOUT
 };
 
@@ -62,6 +63,7 @@ private:
 	std::string const LOG_FILE = "logfile.txt";
 
 	std::string LastError;
+	std::string LastUploadedFilePath;
 
 	/* ================ GUI ================ */
 	int          line_2;	// line of Columm : File Uploaded
@@ -98,7 +100,9 @@ private:
 	void receiveADownloadFileReply(std::string const& downloadedFilePath);
 
 	// Upload File
+	void sendAnUploadFileRequest(std::string const& uploadedFilePath);
 	void uploadFile(std::string const& uploadedFilePath);
+	void updateSharedFileList(std::string const& newFileContent);
 	std::string getFileNameFromPath(std::string const& path);
 
 	// Handle error

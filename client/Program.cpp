@@ -31,19 +31,6 @@ Program::~Program()
 void Program::run()
 { 
 	this->homeScreen();
-
-	//// <DEBUG> (should be replaced by user interface)
-	//string choice;
-	//cout << "0: Register" << endl;
-	//cout << "1: Login" << endl;
-	//cout << "Choice: ";	getline(cin, choice);
-	//if (choice == "0") {
-	//	this->tryRegister();
-	//}
-	//else if (choice == "1") {
-	//	this->tryLogin();
-	//}
-	////  </DEBUG>
 }
 
 void Program::initDataBaseDirectory() {
@@ -217,6 +204,17 @@ void Program::receiveMsg()
 			// Receive the list of shared files from server...
 			break;
 		}
+		case RcvMsgFlag::UPLOAD_FILE_FAIL: {
+			cout << "Upload failed. This file's name exists." << endl;	// PRINT LOG
+			// ...
+			break;
+		}
+		case RcvMsgFlag::UPLOAD_FILE_SUCCESS: {
+			/*std::thread uploadFileThread(&Program::uploadFile, this, this->LastUploadedFilePath);
+			uploadFileThread.detach();*/
+			this->uploadFile(this->LastUploadedFilePath);
+			break;
+		}
 		case RcvMsgFlag::DOWNLOAD_FILE_SUCCESS: {
 			std::string downloadPath = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
 			this->receiveADownloadFileReply(downloadPath);
@@ -224,12 +222,16 @@ void Program::receiveMsg()
 		}
 		case RcvMsgFlag::NEW_USER_LOGIN: {
 			this->writeLogNewLogin();
-
 			break;
 		}
 		case RcvMsgFlag::NEW_FILE_LIST: {
 			// ...
 
+			break;
+		}
+		case RcvMsgFlag::NEW_FILE: {
+			std::string newFileContent(msg);
+			this->updateSharedFileList(newFileContent);
 			break;
 		}
 		case RcvMsgFlag::LOGOUT: {
@@ -369,7 +371,7 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 			fout.write(buffer, this->BUFFER_LEN);
 
 			//Progress
-			if (i % 50 == 0)
+			if (i % 500 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
@@ -395,11 +397,13 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 	}
 }
 
-void Program::uploadFile(std::string const& uploadedFilePath)
+void Program::sendAnUploadFileRequest(std::string const& uploadedFilePath)
 {
+	this->LastUploadedFilePath = uploadedFilePath;
+
 	std::string fileName = this->getFileNameFromPath(uploadedFilePath);
 
-	// Send a request to the Server with the corresponding flag first.
+	// Send a request to the Server with the corresponding flag and the file's name.
 	SendMsgFlag flag = SendMsgFlag::UPLOAD_FILE;
 	const char* msg = fileName.c_str();
 	uint64_t msgLen = fileName.length();
@@ -411,7 +415,13 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 	string log = string("Request to upload ") + shortenFileName(fileName) + string(".");
 	printLog(gui, log);
 
-	// Then, send the file to the Server.
+	// Waiting for a reply from the Server.
+}
+
+void Program::uploadFile(std::string const& uploadedFilePath)
+{
+	std::string fileName = this->getFileNameFromPath(uploadedFilePath);
+
 	ifstream fin(uploadedFilePath, std::ios_base::binary);
 
 	if (fin.is_open()) {
@@ -420,17 +430,23 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		uint64_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
-		// Get file's size
+		// Get file's size.
 		fin.seekg(0, std::ios_base::end);
 		fileSize = fin.tellg();
 		fin.seekg(0, std::ios_base::beg);
 
+		// Add this file to the Database.
+		File file;
+		file.fileName = fileName;
+		file.fileSize = std::to_string(fileSize);
+		this->FileList.push_back(file);
+
 		// Send file's size
 		this->sendData((char*)&fileSize, sizeof(fileSize));
 
-		// Log
-		gui = string("Start uploading ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		log = string("Start uploading ") + fileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		// Log: start uploading
+		std::string gui = string("Start uploading ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string log = string("Start uploading ") + fileName + string(" (") + shortenFileSize(fileSize) + string(").");
 		printLog(gui, log);
 
 		ShowConsoleCursor(false);
@@ -443,7 +459,7 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 			this->sendData(buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 50 == 0)
+			if (i % 500 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
@@ -466,6 +482,21 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		this->LastError = "Unable to open file " + uploadedFilePath;
 		this->printLastError();
 	}
+}
+
+void Program::updateSharedFileList(std::string const& newFileContent)
+{
+	File newFile;
+
+	for (size_t i = 0; i < newFileContent.size(); ++i) {
+		if (newFileContent[i] == '\0') {
+			newFile.fileName = newFileContent.substr(0, i);
+			newFile.fileSize = newFileContent.substr(i + 1, newFileContent.length() - i - 1);
+			break;
+		}
+	}
+
+	this->FileList.push_back(newFile);
 }
 
 std::string Program::getFileNameFromPath(std::string const& path)
@@ -581,7 +612,7 @@ void Program::navigateMode() {
 				if (selected == SELECTED::UPLOAD) {
 					std::string uploadedFilePath = this->enterPath();
 					if (isFilePathExist(uploadedFilePath)) {
-						this->uploadFile(uploadedFilePath);
+						this->sendAnUploadFileRequest(uploadedFilePath);
 					}
 					else {
 						// Log
