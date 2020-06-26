@@ -367,9 +367,8 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 
 		// Log
 		string gui_1 = string("Start downloading: ");
-		string gui_2 = shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-		string log = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-		printLog(gui_1, gui_2, log);
+		string gui_2 = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		printLog(gui_1, gui_2, gui_2);
 
 		printProgressBar(0);// Start 0%
 		
@@ -389,10 +388,9 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 		printProgressBar(1); // Complete 100%
 
 		// Log
-		gui_1 = string("Download succeed: ");
-		gui_2 = shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-		log = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-		printLog(gui_1, gui_2, log);
+		gui_1 = string("Download succeess: ");
+		gui_2 = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		printLog(gui_1, gui_2, gui_2);
 
 		ShowConsoleCursor(true);
 
@@ -455,9 +453,8 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 
 		// Log: start uploading
 		std::string gui_1 = string("Start uploading: ");
-		std::string gui_2 = shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		std::string log = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(gui_1, gui_2, log);
+		std::string gui_2 = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(gui_1, gui_2, gui_2);
 
 		ShowConsoleCursor(false);
 
@@ -480,10 +477,15 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		ShowConsoleCursor(true);
 
 		// Log
-		gui_1 = string("Upload succeed: ");
-		gui_2 = shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		log = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(gui_1, gui_2, log);
+		gui_1 = string("Upload succeess: ");
+		gui_2 = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(gui_1, gui_2, gui_2);
+
+		// Gui
+		line_2 = FileList.size() - 1;
+		printFile(shortenFileName(fileName), shortenFileSize(fileSize), false);
+		line_2 = 0;
+
 
 		// Release resources
 		delete[] buffer;
@@ -521,16 +523,23 @@ void Program::updateSharedFileList(std::string const& newFileContent)
 
 	this->FileList.push_back(newFile);
 
+	// GUI
+	line_2 = FileList.size() - 1;
+	this->printFile(shortenFileName(newFile.fileName), newFile.fileSize, false);
+	line_2 = 0;
+
 	// ... Log
-	// debug
-	this->printLog("new file", "newfile");
-	// debug
+	string gui_1 = "<" + username + ">" + " uploaded file: ";
+	string gui_2 = shortenFileName(newFile.fileName) + string(" (") + newFile.fileSize + string(").");
+	string log = newFile.fileName + string(" (") + newFile.fileSize + string(").");
+	printLog(gui_1, gui_2, log);
+
 }
 
 void Program::initSharedFileList(std::string const& initFileContent) {
 	File initFile;
 
-	for (size_t i = 0; i < initFileContent.size(); ++i) {
+	for (size_t i = 0; i < initFileContent.length(); ++i) {
 		if (initFileContent[i] == '\n') {
 			initFile.fileName = initFileContent.substr(0, i);
 			initFile.fileSize = initFileContent.substr(i + 1, initFileContent.length() - i - 1);
@@ -539,6 +548,12 @@ void Program::initSharedFileList(std::string const& initFileContent) {
 	}
 
 	this->FileList.push_back(initFile);
+	
+
+	// GUI
+	line_2 = FileList.size() - 1;
+	this->printFile(shortenFileName(initFile.fileName), initFile.fileSize, false);
+	line_2 = 0;
 }
 
 void Program::sendALogoutRequest()
@@ -623,7 +638,7 @@ void Program::navigateMode() {
 					this->printMode();
 
 					if (FileList.size() > 0) {
-						printFile(FileList[0].fileName, FileList[0].fileSize, false); // reset the previous line back to normal
+						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
 						line_2 = 0;									  // reset line back to the top of FileList
 						if (selected == SELECTED::DOWNLOAD) {
 							printFile(FileList[0].fileName, FileList[0].fileSize, true);

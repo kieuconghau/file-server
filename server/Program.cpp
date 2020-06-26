@@ -230,8 +230,9 @@ void Program::receiveMsg(User* user)
 			std::string uploadedFileName(msg);
 
 			// Log
-			string content = user->Username + string(": ") + string("Request to upload ") + shortenFileName(uploadedFileName) + string(".");
-			printLog(content, content);
+			string gui_1 = string("<") + user->Username + string("> ") + string("request to upload: ");
+			string gui_2 = uploadedFileName + string(".");
+			printLog(gui_1, gui_2, gui_2);
 
 			// Forwarding
 			this->receiveAFileFromClient(uploadedFileName, user);
@@ -242,8 +243,9 @@ void Program::receiveMsg(User* user)
 			std::string indexFile_str(msg);
 
 			// Log
-			string content = user->Username + string(": ") + string("Request to download ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(".");
-			printLog(content, content);
+			string gui_1 = string("<") + user->Username + string("> ") + string("request to download: "); 
+			string gui_2 = FileNameList[stoi(indexFile_str)] + string(".");
+			printLog(gui_1, gui_2, gui_2);
 
 			// Forwarding
 			this->sendAFileToClient(indexFile_str, user);
@@ -328,6 +330,7 @@ void Program::verifyUserRegister(User* user) {
 	sendMsg(user, SendMsgFlag::REGISTER_SUCCESS, 1, "\0");
 	this->addNewUser(add);
 
+
 	// Log
 	string gui_1 = "<" + add->Username + "> registered an account.";	// PRINT LOG
 	printLog(gui_1, gui_1);
@@ -339,6 +342,7 @@ void Program::verifyUserRegister(User* user) {
 void Program::addNewUser(User* user) {
 	// Update UserList
 	UserList.push_back(user);
+	line_1 = UserList.size() + 2 - 1;
 	printClient(user->Username, false);
 
 	// Write new user to Server Database
@@ -444,7 +448,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 	this->sendMsg(user, flag, msgLen, msg.c_str());
 
 	// Log
-	string content = string("Accept ") + user->Username + string("'s download request.");
+	string content = string("Accept <") + user->Username + string(">'s download request.");
 	printLog(content, content);
 
 	// Then, send a file to that Client (user)
@@ -467,9 +471,9 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		this->sendData(user, (char*)&fileSize, sizeof(fileSize));
 
 		// Log
-		string gui = string("Start sending ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
-		string log = string("Start sending ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(string("To ") + user->Username + string(":"), gui, log);
+		string gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		string log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("Start sending to <") + user->Username + string(">: "), gui, log);
 
 		ShowConsoleCursor(false);
 		line_pb = line_3;
@@ -494,9 +498,9 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		ShowConsoleCursor(true);
 
 		// Log
-		gui = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		log = string("Send ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		printLog(string("To ") + user->Username + string(":"), gui, log);
+		gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("Sent <") + user->Username + string("> succeess: "), gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -506,7 +510,6 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		this->LastError = "Failed to open file " + filePath;
 		this->printLastError();
 	}
-
 	user->MutexSending.unlock();
 }
 
@@ -565,9 +568,9 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
 
 		// Log
-		string gui = string("Start recieving ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		string log = string("Start recieving ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(string("From ") + user->Username + string(":"), gui, log);
+		string gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		string log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("Start recieving from <") + user->Username + string(">: "), gui, log);
 
 		ShowConsoleCursor(false);
 		line_pb = line_3;
@@ -593,9 +596,9 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		ShowConsoleCursor(true);
 
 		// Log
-		gui = string("Recieve ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		log = string("Recieve ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		printLog(string("From ") + user->Username + string(":"), gui, log);
+		gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(string("Recieved from <") + user->Username + string("> succeess: "), gui, log);
 
 		// Release resources
 		delete[] buffer;
@@ -942,7 +945,6 @@ void Program::updateClient(string Username, bool login) {
 
 	line_1 = idx + 2;
 	printClient(Username, login);
-	line_1 = UserList.size() - 1 + 2;
 }
 
 void Program::printProgressBar(float percentage) {
