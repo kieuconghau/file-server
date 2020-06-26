@@ -133,7 +133,14 @@ void Program::receiveMsg()
 	while (true) {
 		crashFlag = this->receiveData((char*)&flag, sizeof(flag));
 		if (crashFlag == -1) {
-			// ...
+			// Client close rcv.
+			closesocket(this->UserInfo.ConnectSocket);
+
+			// Log
+			std::string log = "<Server> logged out.";
+			this->printLog(log, log);
+
+			this->ExitFlag = true;
 
 			break;
 		}

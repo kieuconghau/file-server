@@ -211,7 +211,36 @@ void Program::receiveMsg(User* user)
 	while (true) {
 		crashFlag = this->receiveData(user, (char*)&flag, sizeof(flag));
 		if (crashFlag == SOCKET_ERROR) {
-			// ...
+			// ... user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
+
+			// Discard 'user' from the OnlineUserList.
+			for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+				if (user == this->OnlineUserList[i]) {
+					this->OnlineUserList.erase(this->OnlineUserList.begin() + i);
+					break;
+				}
+			}
+
+			// Send a notification to all Online Clients (broadcast).
+			SendMsgFlag flag = SendMsgFlag::CLIENT_LOGOUT_NOTIF;
+			string msg = user->Username;
+			uint64_t msgLen = msg.length();
+
+			for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+				this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+			}
+
+			// user close rcv.
+			closesocket(user->AcceptSocket);
+
+			// Log
+			string content = "<" + user->Username + "> logged out.";
+			printLog(content, content);
+
+			// ... Update GUI here: update ONL/OFF list.
+			updateClient(user->Username, false);
+
+			// ... user->MutexSending.unlock();
 
 			break;
 		}
