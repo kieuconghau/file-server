@@ -225,8 +225,8 @@ void Program::receiveMsg()
 			break;
 		}
 		case RcvMsgFlag::NEW_FILE_LIST: {
-			// ...
-
+			std::string initFileContent(msg);
+			this->initSharedFileList(initFileContent);
 			break;
 		}
 		case RcvMsgFlag::NEW_FILE: {
@@ -334,9 +334,10 @@ void Program::sendADownloadFileRequest(uint64_t const& fileIndex)
 	uint64_t msgLen = msg.length();
 
 	// Log
-	string gui = string("Request to download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-	string log = string("Request to download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-	printLog(gui, log);
+	string gui_1 = string("Request to download: ");
+	string gui_2 = shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+	string log = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+	printLog(gui_1, gui_2, log);
 
 	this->sendMsg(flag, (char*)msg.c_str(), msgLen);
 
@@ -359,9 +360,10 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 		this->receiveData((char*)&fileSize, sizeof(fileSize));
 
 		// Log
-		string gui = string("Start downloading ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
-		string log = string("Start downloading ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
-		printLog(gui, log);
+		string gui_1 = string("Start downloading: ");
+		string gui_2 = shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		string log = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		printLog(gui_1, gui_2, log);
 
 		printProgressBar(0);// Start 0%
 		
@@ -381,9 +383,10 @@ void Program::receiveADownloadFileReply(std::string const& downloadedFilePath)
 		printProgressBar(1); // Complete 100%
 
 		// Log
-		gui = string("Download ") + shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(") succeed.");
-		log = string("Download ") + FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(") succeed.");
-		printLog(gui, log);
+		gui_1 = string("Download succeed: ");
+		gui_2 = shortenFileName(FileList[line_2].fileName) + string(" (") + FileList[line_2].fileSize + string(").");
+		log = FileList[line_2].fileName + string(" (") + FileList[line_2].fileSize + string(").");
+		printLog(gui_1, gui_2, log);
 
 		ShowConsoleCursor(true);
 
@@ -445,9 +448,10 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		this->sendData((char*)&fileSize, sizeof(fileSize));
 
 		// Log: start uploading
-		std::string gui = string("Start uploading ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		std::string log = string("Start uploading ") + fileName + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(gui, log);
+		std::string gui_1 = string("Start uploading: ");
+		std::string gui_2 = shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string log = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(gui_1, gui_2, log);
 
 		ShowConsoleCursor(false);
 
@@ -470,9 +474,10 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 		ShowConsoleCursor(true);
 
 		// Log
-		gui = string("Upload ") + shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		log = string("Upload ") + fileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		printLog(gui, log);
+		gui_1 = string("Upload succeed: ");
+		gui_2 = shortenFileName(fileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		log = fileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		printLog(gui_1, gui_2, log);
 
 		// Release resources
 		delete[] buffer;
@@ -497,6 +502,20 @@ void Program::updateSharedFileList(std::string const& newFileContent)
 	}
 
 	this->FileList.push_back(newFile);
+}
+
+void Program::initSharedFileList(std::string const& initFileContent) {
+	File initFile;
+
+	for (size_t i = 0; i < initFileContent.size(); ++i) {
+		if (initFileContent[i] == '\n') {
+			initFile.fileName = initFileContent.substr(0, i);
+			initFile.fileSize = initFileContent.substr(i + 1, initFileContent.length() - i - 1);
+			break;
+		}
+	}
+
+	this->FileList.push_back(initFile);
 }
 
 std::string Program::getFileNameFromPath(std::string const& path)
