@@ -23,6 +23,7 @@ enum class SendMsgFlag : uint8_t
 	DOWNLOAD_FILE_SUCCESS,
 	NEW_USER_LOGIN,	// unconfirmed by Hau
 	NEW_FILE_LIST,	// unconfirmed by Hau
+	NEW_FILE,		// unconfirmed
 	LOGOUT
 };
 

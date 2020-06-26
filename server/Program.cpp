@@ -231,8 +231,9 @@ void Program::receiveMsg(User* user)
 			string content = user->Username + string(": ") + string("Request to upload ") + shortenFileName(uploadedFileName) + string(".");
 			printLog(content, content);
 
-			std::thread uploadFileThread(&Program::receiveAFileFromClient, this, uploadedFileName, user);
-			uploadFileThread.join();	// ...
+			// Forwarding
+			this->receiveAFileFromClient(uploadedFileName, user);
+
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE: {
@@ -242,8 +243,9 @@ void Program::receiveMsg(User* user)
 			string content = user->Username + string(": ") + string("Request to download ") + shortenFileName(FileNameList[stoi(indexFile_str)]) + string(".");
 			printLog(content, content);
 
-			std::thread sendFileThread(&Program::sendAFileToClient, this, indexFile_str, user);
-			sendFileThread.detach();
+			// Forwarding
+			this->sendAFileToClient(indexFile_str, user);
+
 			break;
 		}
 		case RcvMsgFlag::LOGOUT:
@@ -403,12 +405,14 @@ void Program::verifyUserLogin(User* user) {
 
 void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 {
+	user->MutexSending.lock();
+
 	// Send a reply to the Client (user) first
 	SendMsgFlag flag = SendMsgFlag::DOWNLOAD_FILE_SUCCESS;
-	uint64_t msgLen = 0;
-	char* msg = nullptr;
+	std::string msg = "a";
+	uint64_t msgLen = msg.length();
 
-	this->sendMsg(user, flag, msgLen, msg);
+	this->sendMsg(user, flag, msgLen, msg.c_str());
 
 	// Log
 	string content = string("Accept ") + user->Username + string("'s download request.");
@@ -450,7 +454,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 			this->sendData(user, buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 50 == 0)
+			if (i % 500 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
@@ -473,6 +477,8 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		this->LastError = "Failed to open file " + filePath;
 		this->printLastError();
 	}
+
+	user->MutexSending.unlock();
 }
 
 std::string Program::getPathOfAFile(uint64_t const& indexFile)
@@ -487,16 +493,58 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 {
 	this->MutexUpload.lock();
 
+	// Send a reply.
+	SendMsgFlag flag = SendMsgFlag::UPLOAD_FILE_SUCCESS;
+	std::string msg = "a";
+	uint64_t msgLen = msg.length();
+
+	for (size_t i = 0; i < this->FileNameList.size(); ++i) {
+		if (uploadFileName == this->FileNameList[i]) {
+			flag = SendMsgFlag::UPLOAD_FILE_FAIL;
+			break;
+		}
+	}
+
+	this->sendMsg(user, flag, msgLen, msg.c_str());
+
+	// If the file's name already exists, exit.
+	if (flag == SendMsgFlag::UPLOAD_FILE_FAIL) {
+		this->MutexUpload.unlock();
+		return;
+	}
+
+	// Add this file to the Database.
+	this->FileNameList.push_back(uploadFileName);
+
+	std::ofstream fo1(this->DATABASE_PATH + "\\" + this->SHARED_FILE_NAMES_FILE, std::ios_base::binary | std::ios_base::app);
+	if (fo1.is_open()) {
+		fo1 << uploadFileName << "\0";
+		fo1.close();
+	}
+
+	// Start receiving the file.
 	std::ofstream fout(this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + uploadFileName, std::ios_base::binary);
+
+	uint64_t fileSize = 0;
 
 	if (fout.is_open()) {
 		int iResult;
 
-		uint64_t fileSize;
 		char* buffer = new char[this->BUFFER_LEN];
 
-		// Receive file's size
+		// Receive file's size.
 		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
+
+		// Send broadcast to all Online Clients (except for user)
+		SendMsgFlag flag;
+		uint64_t msgLen;
+		char* msg;
+
+		for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+			if (this->OnlineUserList[i] != user) {
+				// ...
+			}
+		}
 
 		// Log
 		string gui = string("Start recieving ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
@@ -515,7 +563,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 			fout.write(buffer, this->BUFFER_LEN);
 
 			// Progress
-			if (i % 50 == 0)
+			if (i % 500 == 0)
 				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
@@ -528,7 +576,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 
 		// Log
 		gui = string("Recieve ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
-		log = string("Recieve") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
+		log = string("Recieve ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(string("From ") + user->Username + string(":"), gui, log);
 
 		// Release resources
@@ -538,6 +586,17 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	else {
 		this->LastError = "Unable to create file " + uploadFileName;
 		this->printLastError();
+	}
+
+	// Send this file's name and file's size to all Clients except for 'user'.
+	flag = SendMsgFlag::NEW_FILE;
+	msg = uploadFileName + "\0" + std::to_string(fileSize);
+	msgLen = msg.length();
+
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		if (user != this->OnlineUserList[i]) {
+			this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+		}
 	}
 
 	this->MutexUpload.unlock();
