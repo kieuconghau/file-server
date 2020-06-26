@@ -34,9 +34,9 @@ enum class RcvMsgFlag : uint8_t
 	UPLOAD_FILE_FAIL,
 	UPLOAD_FILE_SUCCESS,
 	DOWNLOAD_FILE_SUCCESS,
-	NEW_USER_LOGIN,	// unconfirmed by Hau
-	NEW_FILE_LIST,	// unconfirmed by Hau
-	NEW_FILE,		// unconfirmed
+	NEW_USER_LOGIN,
+	NEW_FILE_LIST,
+	NEW_FILE,
 	INIT_FILE_LIST,
 	LOGOUT
 };
@@ -65,6 +65,8 @@ private:
 
 	std::string LastError;
 	std::string LastUploadedFilePath;
+
+	bool ExitFlag;
 
 	/* ================ GUI ================ */
 	int          line_2;	// line of Columm : File Uploaded
@@ -108,6 +110,9 @@ private:
 
 	// Init File List
 	void initSharedFileList(std::string const& initFileContent);
+
+	// Logout
+	void sendALogoutRequest();
 
 	// Handle error
 	void printLastError();

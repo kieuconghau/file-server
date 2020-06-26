@@ -21,9 +21,9 @@ enum class SendMsgFlag : uint8_t
 	UPLOAD_FILE_FAIL,
 	UPLOAD_FILE_SUCCESS,
 	DOWNLOAD_FILE_SUCCESS,
-	NEW_USER_LOGIN,	// unconfirmed by Hau
-	NEW_FILE_LIST,	// unconfirmed by Hau
-	NEW_FILE,		// unconfirmed
+	NEW_USER_LOGIN,
+	NEW_FILE_LIST,
+	NEW_FILE,
 	LOGOUT
 };
 
@@ -108,6 +108,9 @@ private:
 
 	// Upload File
 	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
+
+	// Logout
+	void receiveALogoutRequestFromClient(User* user);
 
 	// Handle error
 	void printLastError();

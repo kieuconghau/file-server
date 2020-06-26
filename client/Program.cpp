@@ -14,6 +14,7 @@ Program::Program()
 	this->initDataBaseDirectory();
 	this->initFileList();
 	this->initWinsock();
+	this->ExitFlag = false;
 
 	/* LOG */
 	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
@@ -25,7 +26,8 @@ Program::Program()
 
 Program::~Program()
 {
-	// ...
+	// Release resources.
+	WSACleanup();
 }
 
 void Program::run()
@@ -129,8 +131,11 @@ void Program::receiveMsg()
 
 	while (true) {
 		shutdownFlag = this->receiveData((char*)&flag, sizeof(flag));
-		if (shutdownFlag == 0)	// Check if the Server shutdowns
+		if (shutdownFlag == 0) {	// Check if the Server shutdowns
+			closesocket(this->UserInfo.ConnectSocket);	// Client close rcv.
+			this->ExitFlag = true;	// Unblock at the navigateMode function.
 			break;
+		}
 
 		this->receiveData((char*)&msgLen, sizeof(msgLen));
 		msg = new char[msgLen + 1];
@@ -235,8 +240,9 @@ void Program::receiveMsg()
 			break;
 		}
 		case RcvMsgFlag::LOGOUT: {
-			// ...
-
+			std::string username(msg);
+			std::string log = "<" + username + "> logged out.";
+			this->printLog(log, log);
 			break;
 		}
 		default:
@@ -535,6 +541,20 @@ void Program::initSharedFileList(std::string const& initFileContent) {
 	this->FileList.push_back(initFile);
 }
 
+void Program::sendALogoutRequest()
+{
+	// Client closes send.
+	int iResult = shutdown(this->UserInfo.ConnectSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
+		this->printLastError();
+	}
+
+	// Log
+	std::string log = "Request the Server to logout.";
+	this->printLog(log, log);
+}
+
 std::string Program::getFileNameFromPath(std::string const& path)
 {
 	size_t startPos = 0;
@@ -670,8 +690,11 @@ void Program::navigateMode() {
 					}
 				}
 
-				if (selected == SELECTED::YES) {
+				if (selected == SELECTED::YES) {	// Logout here
 					esc = true;
+					this->sendALogoutRequest();
+					
+					while (!this->ExitFlag);
 				}
 
 				if (selected == SELECTED::NO) {
