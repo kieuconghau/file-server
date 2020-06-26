@@ -155,7 +155,7 @@ void Program::receiveMsg()
 		{
 		case RcvMsgFlag::REGISTER_FAIL: {
 			// Log
-			string gui_1 = "Register failed.Username already exists.";
+			string gui_1 = "Register failed. Username already exists.";
 			printLog(gui_1, gui_1);
 
 			// Register_Fail -> selected Login/Register
@@ -176,7 +176,7 @@ void Program::receiveMsg()
 			this->buttonClient();
 			this->printClient();
 			this->loginClient();
-			this->tryLogin(&UserInfo);
+			this->tryLogin();
 
 			// disconnect to server...
 			break;
@@ -211,6 +211,7 @@ void Program::receiveMsg()
 			printLog(gui_1, gui_1);
 
 			// Gui
+			selected = SELECTED::UPLOAD;
 			this->printStatus();
 
 			// Receive the list of shared files from server...
@@ -278,37 +279,37 @@ int Program::sendData(const char* buffer, uint64_t const& len)
 	return iResult;
 }
 
-void Program::tryRegister(User *user) {
+void Program::tryRegister() {
 	size_t usernameLen;
 	size_t passwordLen;
 
-	sendMsg(SendMsgFlag::REGISTER, NULL, 0);
+	sendMsg(SendMsgFlag::REGISTER, "\0", 1);
 
-	usernameLen = user->Username.length();
+	usernameLen = UserInfo.Username.length();
 	sendData((char*)&usernameLen, sizeof(usernameLen));
-	sendData(user->Username.c_str(), user->Username.length());
-	passwordLen =user->Password.length();
+	sendData(UserInfo.Username.c_str(), UserInfo.Username.length() + 1);
+	passwordLen = UserInfo.Password.length();
 	sendData((char*)&passwordLen, sizeof(passwordLen));
-	sendData(user->Password.c_str(), user->Password.length());
+	sendData(UserInfo.Password.c_str(), UserInfo.Password.length() + 1);
 }
 
-void Program::tryLogin(User* user) {
+void Program::tryLogin() {
 	size_t usernameLen;
 	size_t passwordLen;
 
-	sendMsg(SendMsgFlag::LOGIN, NULL, 0);
+	sendMsg(SendMsgFlag::LOGIN, "\0", 1);
 
-	usernameLen = user->Username.length();
+	usernameLen = UserInfo.Username.length();
 	sendData((char*)&usernameLen, sizeof(usernameLen));
-	sendData(user->Username.c_str(), user->Username.length());
-	passwordLen = user->Password.length();
+	sendData(UserInfo.Username.c_str(), UserInfo.Username.length() + 1);
+	passwordLen = UserInfo.Password.length();
 	sendData((char*)&passwordLen, sizeof(passwordLen));
-	sendData(user->Password.c_str(), user->Password.length());
+	sendData(UserInfo.Password.c_str(), UserInfo.Password.length() + 1);
 }
 
 void Program::writeLogNewLogin() {
 	char* username;
-	uint8_t usernameLen;
+	size_t usernameLen;
 
 	receiveData((char*)&usernameLen, sizeof(usernameLen));
 	username = new char[usernameLen + 1];
@@ -493,6 +494,8 @@ void Program::homeScreen() {
 	this->printClient();
 	this->navigateClient();
 
+	while (selected != SELECTED::UPLOAD);
+
 
 	for (int i = 0; i < FileList.size(); i++) {
 		printFile(shortenFileName(FileList[i].fileName), FileList[i].fileSize, false);
@@ -672,12 +675,12 @@ void Program::printLog(string gui, string log) {
 	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
 	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
 
-	cout << timeline;
+	cout << timeline << std::flush;
 	f << timeline;
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << gui;
+	cout << gui << std::flush;
 	f << log << endl;
 
 	line_3++;
@@ -699,14 +702,14 @@ void Program::printLog(string gui_1, string gui_2, string log) {
 	if (ltm->tm_min < 10) timeline += string(":0") + numCommas(ltm->tm_min) + string("] ");
 	else timeline += string(":") + numCommas(ltm->tm_min) + string("] ");
 
-	cout << timeline;
+	cout << timeline << std::flush;
 	f << timeline;
 
 	// Content
 	setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << gui_1; line_3++;
+	cout << gui_1 << std::flush; line_3++;
 	gotoXY(69, line_3);
-	cout << gui_2;
+	cout << gui_2 << std::flush;
 
 	f << gui_1 << endl << log << endl;
 
@@ -781,20 +784,20 @@ void Program::navigateClient() {
 
 			// ============= ENTER =============
 			if (GetKeyState(VK_RETURN) & 0x8000) {
-				if (ServerIP != "") {
+				if (this->ServerIP == NULL || this->ServerIP[0] == 0) {
 					this->inputIP(); // make sure ip right 
 				}
 				
 				if (selected == SELECTED::REGISTER) {
 					this->loginClient();
 
-					this->tryRegister(&UserInfo); // make sure register success
+					this->tryRegister(); // make sure register success
 					
 				}
 				else {
 					this->loginClient();
 
-					this->tryLogin(&UserInfo); // make sure login success
+					this->tryLogin(); // make sure login success
 				}
 
 				break;

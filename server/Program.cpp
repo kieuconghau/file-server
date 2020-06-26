@@ -308,20 +308,24 @@ void Program::verifyUserRegister(User* user) {
 	for (size_t i = 0; i < this->UserList.size(); i++) {
 		if (username == this->UserList[i]->Username) {
 			username_existed = true;
-			return;
+			break;
 		}
 	}
 
 	if (username_existed == true) {
-		sendMsg(user, SendMsgFlag::REGISTER_FAIL, 0, NULL);
+		sendMsg(user, SendMsgFlag::REGISTER_FAIL, 1, "\0");
 		return;
 	}
 
-	sendMsg(user, SendMsgFlag::REGISTER_SUCCESS, 0, NULL);
-	this->addNewUser(user);
+	User* add = new User;
+	add->Username = username;
+	add->Password = password;
+
+	sendMsg(user, SendMsgFlag::REGISTER_SUCCESS, 1, "\0");
+	this->addNewUser(add);
 
 	// Log
-	string gui_1 = "<" + user->Username + "> registered an account.";	// PRINT LOG
+	string gui_1 = "<" + add->Username + "> registered an account.";	// PRINT LOG
 	printLog(gui_1, gui_1);
 
 	delete[] username;
@@ -352,8 +356,11 @@ void Program::addNewUser(User* user) {
 void Program::verifyUserLogin(User* user) {
 	char* username;
 	char* password;
-	uint8_t usernameLen;
-	uint8_t passwordLen;
+	size_t usernameLen;
+	size_t passwordLen;
+
+	user->Username = "";
+	user->Password = "";
 
 	receiveData(user, (char*)&usernameLen, sizeof(usernameLen));
 	username = new char[usernameLen + 1];
@@ -362,23 +369,23 @@ void Program::verifyUserLogin(User* user) {
 	password = new char[passwordLen + 1];
 	receiveData(user, password, passwordLen + 1);
 
-	int pos;
+	int pos = -1;
 	for (size_t i = 0; i < this->UserList.size(); i++) {
-		if (this->UserList[i]->Username == username) {
+		if (this->UserList[i]->Username.compare(string(username)) == 0) {
 			pos = i;
-			user->Username = username;
-			if (this->UserList[i]->Username == password) {
-				user->Password = password;
+			user->Username = string(username);
+			if (this->UserList[i]->Password.compare(string(password)) == 0) {
+				user->Password = string(password);
 			}
 		}
 	}
 
 	if (user->Username == "") {
-		sendMsg(user, SendMsgFlag::LOGIN_FAIL_USERNAME, 0, NULL);
+		sendMsg(user, SendMsgFlag::LOGIN_FAIL_USERNAME, 1, "\0");
 		return;
 	}
 	if (user->Password == "") {
-		sendMsg(user, SendMsgFlag::LOGIN_FAIL_PASSWORD, 0, NULL);
+		sendMsg(user, SendMsgFlag::LOGIN_FAIL_PASSWORD, 1, "\0");
 		return;
 	}
 
@@ -389,7 +396,7 @@ void Program::verifyUserLogin(User* user) {
 	// Gui
 	updateClient(user->Username, true);
 
-	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 0, NULL);
+	sendMsg(user, SendMsgFlag::LOGIN_SUCCESS, 1, "\0");
 
 	// Send the list of shared files to current user...
 
@@ -397,7 +404,7 @@ void Program::verifyUserLogin(User* user) {
 	// Send to every online users, except the newly-logged in user,
 	// who's at the back of the OnlineUserList vector
 	for (size_t i = 0; i < this->OnlineUserList.size() - 1; i++) {
-		sendMsg(user, SendMsgFlag::NEW_USER_LOGIN, 0, NULL);
+		sendMsg(OnlineUserList[i], SendMsgFlag::NEW_USER_LOGIN, 1, "\0");
 
 		sendData(OnlineUserList[i], (char*)&usernameLen, sizeof(usernameLen));
 		sendData(OnlineUserList[i], username, usernameLen + 1);
