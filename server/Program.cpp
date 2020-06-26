@@ -25,13 +25,16 @@ Program::Program()
 
 Program::~Program()
 {
+	// Close the ListenSocket.
 	closesocket(this->ListenSocket);
 
+	// Release all users.
 	for (uint64_t i = 0; i < this->UserList.size(); ++i) {
 		delete this->UserList[i];
 		this->UserList[i] = nullptr;
 	}
 
+	// Realase all file.
 	for (int i = 0; i < FileNameList.size(); i++) {		// ???
 		delete& this->FileNameList[i];
 	}
@@ -660,12 +663,24 @@ void Program::receiveALogoutRequestFromClient(User* user)
 	closesocket(user->AcceptSocket);
 
 	// Log
-	this->printLog(user->Username + " logged out.", user->Username + " logged out.");
+	std::string log = "<" + user->Username + "> logged out.";
+	this->printLog(log, log);
 
 	// ... Update GUI here: update ONL/OFF list.
 	
 
 	// ... user->MutexSending.unlock();
+}
+
+void Program::sendALogoutRequest()
+{
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		int iResult = shutdown(this->OnlineUserList[i]->AcceptSocket, SD_SEND);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
+			this->printLastError();
+		}
+	}
 }
 
 void Program::printLastError()
@@ -750,8 +765,8 @@ void Program::navigateStatus() {
 			// ============= ENTER =============
 			if (GetKeyState(VK_RETURN) & 0x8000) {
 				if (selected == SELECTED::YES) {
-					// SOCKET DISCONECT
-
+					this->sendALogoutRequest();
+					while (this->OnlineUserList.size() != 0);
 					esc = true;
 				}
 				else {

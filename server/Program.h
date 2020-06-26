@@ -95,7 +95,6 @@ private:
 	int sendData(User* user, const char* buffer, uint64_t const& len);
 
 	// Register
-
 	void verifyUserRegister(User* user);
 	void addNewUser(User* user);
 
@@ -110,7 +109,8 @@ private:
 	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
 
 	// Logout
-	void receiveALogoutRequestFromClient(User* user);
+	void receiveALogoutRequestFromClient(User* user);	// user logout
+	void sendALogoutRequest();		// Server logout
 
 	// Handle error
 	void printLastError();

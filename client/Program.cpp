@@ -210,8 +210,12 @@ void Program::receiveMsg()
 			break;
 		}
 		case RcvMsgFlag::UPLOAD_FILE_FAIL: {
-			cout << "Upload failed. This file's name exists." << endl;	// PRINT LOG
-			// ...
+			// Log
+			std::string gui1 = "Upload file failed.";
+			std::string gui2 = "This file's name already exists.";
+			std::string log = gui1 + " " + gui2;
+			printLog(gui1, gui2, log);
+			
 			break;
 		}
 		case RcvMsgFlag::UPLOAD_FILE_SUCCESS: {
