@@ -491,17 +491,34 @@ void Program::uploadFile(std::string const& uploadedFilePath)
 
 void Program::updateSharedFileList(std::string const& newFileContent)
 {
+	std::string username;
 	File newFile;
 
-	for (size_t i = 0; i < newFileContent.size(); ++i) {
-		if (newFileContent[i] == '\0') {
-			newFile.fileName = newFileContent.substr(0, i);
-			newFile.fileSize = newFileContent.substr(i + 1, newFileContent.length() - i - 1);
+	int i = 0;
+	int j = 0;
+
+	for (i = 0; i < newFileContent.length(); ++i) {
+		if (newFileContent[i] == '\n') {
+			username = newFileContent.substr(0, i);
 			break;
 		}
 	}
 
+	for (j = newFileContent.length() - 1; j >= 0; --j) {
+		if (newFileContent[j] == '\n') {
+			newFile.fileSize = newFileContent.substr(j + 1, newFileContent.length() - j - 1);
+			break;
+		}
+	}
+
+	newFile.fileName = newFileContent.substr(i + 1, j - i - 1);
+
 	this->FileList.push_back(newFile);
+
+	// ... Log
+	// debug
+	this->printLog("new file", "newfile");
+	// debug
 }
 
 void Program::initSharedFileList(std::string const& initFileContent) {
@@ -630,6 +647,12 @@ void Program::navigateMode() {
 
 				if (selected == SELECTED::UPLOAD) {
 					std::string uploadedFilePath = this->enterPath();
+
+					if (uploadedFilePath.front() == '"' && uploadedFilePath.back() == '"') {
+						uploadedFilePath.erase(uploadedFilePath.begin());
+						uploadedFilePath.erase(uploadedFilePath.begin() + uploadedFilePath.length() - 1);
+					}
+
 					if (isFilePathExist(uploadedFilePath)) {
 						this->sendAnUploadFileRequest(uploadedFilePath);
 					}

@@ -595,10 +595,6 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		log = string("Recieve ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(") succeed.");
 		printLog(string("From ") + user->Username + string(":"), gui, log);
 
-		// Write database, update gui
-		this->updateSharedFilesNamesFile(uploadFileName);
-		this->printFiles(uploadFileName);
-
 		// Release resources
 		delete[] buffer;
 		fout.close();
@@ -608,9 +604,14 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		this->printLastError();
 	}
 
+	// Write database, update gui
+	this->updateSharedFilesNamesFile(uploadFileName);
+	this->printFiles(uploadFileName);
+
 	// Send this file's name and file's size to all Clients except for 'user'.
+	// Structure: username\nfilename\nfilesize
 	flag = SendMsgFlag::NEW_FILE;
-	msg = uploadFileName + "\0" + shortenFileSize(fileSize);
+	msg = user->Username + "\n" + uploadFileName + "\n" + this->shortenFileSize(fileSize);
 	msgLen = msg.length();
 
 	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
