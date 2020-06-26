@@ -216,7 +216,7 @@ void Program::receiveMsg()
 			std::string gui2 = "This file's name already exists.";
 			std::string log = gui1 + " " + gui2;
 			printLog(gui1, gui2, log);
-			
+      
 			break;
 		}
 		case RcvMsgFlag::UPLOAD_FILE_SUCCESS: {
@@ -226,8 +226,7 @@ void Program::receiveMsg()
 			break;
 		}
 		case RcvMsgFlag::DOWNLOAD_FILE_SUCCESS: {
-			std::string downloadPath = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
-			this->receiveADownloadFileReply(downloadPath);
+			this->receiveADownloadFileReply(this->dirDownFolder);
 			break;
 		}
 		case RcvMsgFlag::NEW_USER_LOGIN: {
@@ -766,7 +765,31 @@ void Program::navigateMode() {
 
 				if (selected == SELECTED::DOWNLOAD) {
 					if (FileList.size() > 0) {
-						this->sendADownloadFileRequest(this->line_2);	// ... Download at the default path.
+						this->dirDownFolder = this->enterPath();
+
+						if (dirExists(dirDownFolder)) {
+							// Log
+							string gui_1 = "Download folder path: ";
+							string gui_2 = dirDownFolder + "\\";
+							printLog(gui_1, gui_2, gui_2);
+							dirDownFolder = this->dirDownFolder + string("\\") + this->FileList[this->line_2].fileName;
+							this->sendADownloadFileRequest(this->line_2);
+						}
+						else {
+							if (this->dirDownFolder == "") {
+								// Log
+								string gui_1 = "Download folder path: Default";
+								printLog(gui_1, gui_1);
+								this->dirDownFolder = this->DATABASE_PATH + "\\" + this->DOWNLOAD_FOLDER + "\\" + this->FileList[this->line_2].fileName;	// default path
+								this->sendADownloadFileRequest(this->line_2);
+							}
+							else {
+								// Log
+								string gui_1 = "Download folder path: ";
+								string gui_2 = dirDownFolder + "is invalid.";
+								printLog(gui_1, gui_2, gui_2);
+							}
+						}
 					}
 				}
 
@@ -1097,4 +1120,16 @@ string Program::shortenFileSize(unsigned long size) {
 bool Program::isFilePathExist(const std::string& name) {
 	ifstream f(name.c_str());
 	return f.good();
+}
+
+bool Program::dirExists(const std::string& dirName_in)
+{
+	DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
+	if (ftyp == INVALID_FILE_ATTRIBUTES)
+		return false;  //something is wrong with your path!
+
+	if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
+		return true;   // this is a directory!
+
+	return false;    // this is not a directory!
 }

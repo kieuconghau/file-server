@@ -575,12 +575,6 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	// Add this file to the Database.
 	this->FileNameList.push_back(uploadFileName);
 
-	std::ofstream fo1(this->DATABASE_PATH + "\\" + this->SHARED_FILE_NAMES_FILE, std::ios_base::binary | std::ios_base::app);
-	if (fo1.is_open()) {
-		fo1 << uploadFileName << "\0";
-		fo1.close();
-	}
-
 	// Start receiving the file.
 	std::ofstream fout(this->DATABASE_PATH + "\\" + this->SHARED_FILES_FOLDER + "\\" + uploadFileName, std::ios_base::binary);
 
@@ -694,11 +688,11 @@ void Program::sendALogoutReply(User* user)
 	closesocket(user->AcceptSocket);
 
 	// Log
-	std::string log = "<" + user->Username + "> logged out.";
-	this->printLog(log, log);
+	string content = "<" + user->Username + "> logged out.";
+	printLog(content, content);
 
 	// ... Update GUI here: update ONL/OFF list.
-	
+	updateClient(user->Username, false);
 
 	// ... user->MutexSending.unlock();
 }
@@ -1038,7 +1032,7 @@ void Program::printProgressBar(float percentage) {
 
 void Program::updateSharedFilesNamesFile(string filename) {
 	fstream f(DATABASE_PATH + "\\" + SHARED_FILE_NAMES_FILE,
-		std::fstream::in | std::fstream::binary);
+		std::fstream::app | std::fstream::binary);
 
 	if (!f.is_open()) {
 		this->LastError = "Failed to open server database file to write";
@@ -1046,7 +1040,9 @@ void Program::updateSharedFilesNamesFile(string filename) {
 		return;
 	}
 
-	f.write((char*)filename.c_str(), filename.length() + 1);
+	f.seekp(0, ios::end);
+	f.write(filename.c_str(), filename.size());
+	f.write("\0", sizeof(char));
 
 	f.close();
 }
