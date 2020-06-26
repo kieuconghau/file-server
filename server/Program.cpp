@@ -416,6 +416,16 @@ void Program::verifyUserLogin(User* user) {
 	string gui_1 = "<" + user->Username + "> logged in.";	
 	printLog(gui_1, gui_1);
 
+
+	// Send Init File List
+	for (size_t i = 0; i < this->FileNameList.size(); i++) {
+		string msg = FileNameList[i] + "\n" + toStringFileSize(FileNameList[i]);
+		uint64_t msgLen = msg.length();
+
+		sendMsg(user, SendMsgFlag::NEW_FILE_LIST, msgLen, msg.c_str());
+		
+	}
+
 	delete[] username;
 	delete[] password;
 }
@@ -599,7 +609,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	this->printFiles(uploadFileName);
 
 	// Send this file's name and file's size to all Clients except for 'user'.
-	// Structure: username\0filename\0filesize
+	// Structure: username\nfilename\nfilesize
 	flag = SendMsgFlag::NEW_FILE;
 	msg = user->Username + "\n" + uploadFileName + "\n" + this->shortenFileSize(fileSize);
 	msgLen = msg.length();

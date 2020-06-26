@@ -37,6 +37,7 @@ enum class RcvMsgFlag : uint8_t
 	NEW_USER_LOGIN,	// unconfirmed by Hau
 	NEW_FILE_LIST,	// unconfirmed by Hau
 	NEW_FILE,		// unconfirmed
+	INIT_FILE_LIST,
 	LOGOUT
 };
 
@@ -104,6 +105,9 @@ private:
 	void uploadFile(std::string const& uploadedFilePath);
 	void updateSharedFileList(std::string const& newFileContent);
 	std::string getFileNameFromPath(std::string const& path);
+
+	// Init File List
+	void initSharedFileList(std::string const& initFileContent);
 
 	// Handle error
 	void printLastError();
