@@ -552,17 +552,6 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		// Receive file's size.
 		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
 
-		// Send broadcast to all Online Clients (except for user)
-		SendMsgFlag flag;
-		uint64_t msgLen;
-		char* msg;
-
-		for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
-			if (this->OnlineUserList[i] != user) {
-				// ...
-			}
-		}
-
 		// Log
 		string gui = string("Start recieving ") + shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
 		string log = string("Start recieving ") + uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
