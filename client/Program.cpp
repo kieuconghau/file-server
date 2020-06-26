@@ -709,10 +709,10 @@ void Program::navigateMode() {
 					this->printMode();
 
 					if (FileList.size() > 0) {
-						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+						printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, false); // reset the previous line back to normal
 						line_2 = 0;									  // reset line back to the top of FileList
 						if (selected == SELECTED::DOWNLOAD) {
-							printFile(FileList[0].fileName, FileList[0].fileSize, true);
+							printFile(shortenFileName(FileList[0].fileName), FileList[0].fileSize, true);
 						}
 					}
 				}
@@ -728,10 +728,10 @@ void Program::navigateMode() {
 			if (GetKeyState(VK_UP) & 0x8000) {
 				if (selected == SELECTED::DOWNLOAD) {
 					if (FileList.size() > 0) {
-						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+						printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, false); // reset the previous line back to normal
 						line_2--;
 						line_2 += (line_2 < 0) ? FileList.size() : 0;
-						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, true);
+						printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, true);
 					}
 				}
 			}
@@ -740,10 +740,10 @@ void Program::navigateMode() {
 			if (GetKeyState(VK_DOWN) & 0x8000) {
 				if (selected == SELECTED::DOWNLOAD) {
 					if (FileList.size() > 0) {
-						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+						printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, false); // reset the previous line back to normal
 						line_2++;
 						line_2 %= FileList.size();
-						printFile(FileList[line_2].fileName, FileList[line_2].fileSize, true);
+						printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, true);
 					}
 				}
 			}
@@ -815,7 +815,7 @@ void Program::navigateMode() {
 			// ============= ESC =============
 			if (GetKeyState(VK_ESCAPE) & 0x8000) {
 				if (FileList.size() > 0) {
-					printFile(FileList[line_2].fileName, FileList[line_2].fileSize, false); // reset the previous line back to normal
+					printFile(shortenFileName(FileList[line_2].fileName), FileList[line_2].fileSize, false); // reset the previous line back to normal
 					line_2 = 0;									  // reset line back to the top of FileList
 				}
 				selected = SELECTED::UPLOAD;
@@ -862,7 +862,7 @@ void Program::printFile(string name, string size, bool selected) {
 		setColor(COLOR::BLACK, COLOR::LIGHT_BLUE);
 	}
 	else setColor(COLOR::WHITE, COLOR::BLACK);
-	cout << " " << name; printSpace(27 - name.length() - size.length()); cout << size << " ";
+	cout << " " << shortenFileName(name); printSpace(27 - name.length() - size.length()); cout << size << " ";
 }
 
 void Program::printLog(string gui, string log) {
