@@ -24,7 +24,9 @@ enum class SendMsgFlag : uint8_t
 	NEW_USER_LOGIN,
 	NEW_FILE_LIST,
 	NEW_FILE,
-	LOGOUT
+	LOGOUT_CLIENT,
+	LOGOUT_SERVER,
+	CLIENT_LOGOUT_NOTIF
 };
 
 enum class RcvMsgFlag : uint8_t
@@ -34,7 +36,8 @@ enum class RcvMsgFlag : uint8_t
 	PASSWORD,	// unused
 	UPLOAD_FILE,
 	DOWNLOAD_FILE,
-	LOGOUT
+	LOGOUT_CLIENT,
+	LOGOUT_SERVER
 };
 
 class Program
@@ -95,7 +98,6 @@ private:
 	int sendData(User* user, const char* buffer, uint64_t const& len);
 
 	// Register
-
 	void verifyUserRegister(User* user);
 	void addNewUser(User* user);
 
@@ -110,7 +112,10 @@ private:
 	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
 
 	// Logout
-	void receiveALogoutRequestFromClient(User* user);
+	void sendALogoutReply(User* user);	// user logout
+
+	void sendALogoutRequest();			// Server logout
+	void receiveALogoutReply();			// Server logout
 
 	// Handle error
 	void printLastError();

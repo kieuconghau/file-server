@@ -21,7 +21,8 @@ enum class SendMsgFlag : uint8_t
 	PASSWORD,	// unused
 	UPLOAD_FILE,
 	DOWNLOAD_FILE,
-	LOGOUT
+	LOGOUT_CLIENT,
+	LOGOUT_SERVER
 };
 
 enum class RcvMsgFlag : uint8_t
@@ -37,7 +38,9 @@ enum class RcvMsgFlag : uint8_t
 	NEW_USER_LOGIN,
 	NEW_FILE_LIST,
 	NEW_FILE,
-	LOGOUT
+	LOGOUT_CLIENT,
+	LOGOUT_SERVER,
+	CLIENT_LOGOUT_NOTIF
 };
 
 class Program
@@ -113,6 +116,9 @@ private:
 
 	// Logout
 	void sendALogoutRequest();
+	void receiveALogoutReply();
+
+	void sendALogoutReply();
 
 	// Handle error
 	void printLastError();

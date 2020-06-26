@@ -25,13 +25,16 @@ Program::Program()
 
 Program::~Program()
 {
+	// Close the ListenSocket.
 	closesocket(this->ListenSocket);
 
+	// Release all users.
 	for (uint64_t i = 0; i < this->UserList.size(); ++i) {
 		delete this->UserList[i];
 		this->UserList[i] = nullptr;
 	}
 
+	// Realase all file.
 	for (int i = 0; i < FileNameList.size(); i++) {		// ???
 		delete& this->FileNameList[i];
 	}
@@ -42,12 +45,13 @@ Program::~Program()
 
 void Program::run()
 {
-	std::thread userInteractThread(&Program::homeScreen, this);
-	userInteractThread.detach();
-
 	this->initWinsock();
 	this->initListenSocket();
-	this->acceptConnections();
+	
+	std::thread acceptConnectionThread(&Program::acceptConnections, this);
+	acceptConnectionThread.detach();
+
+	this->homeScreen();
 }
 
 void Program::initDataBaseDirectory() {
@@ -194,18 +198,21 @@ void Program::acceptConnections()
 
 void Program::receiveMsg(User* user)
 {
+	bool exitFlag = false;
+
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG */
 	
-	int shutdownFlag;
+	int crashFlag;
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
 	char* msg;
 
 	while (true) {
-		shutdownFlag = this->receiveData(user, (char*)&flag, sizeof(flag));
-		if (shutdownFlag == 0) {	// Check if the Client (user) shutdowns
-			this->receiveALogoutRequestFromClient(user);
+		crashFlag = this->receiveData(user, (char*)&flag, sizeof(flag));
+		if (crashFlag == SOCKET_ERROR) {
+			// ...
+
 			break;
 		}
 
@@ -252,15 +259,35 @@ void Program::receiveMsg(User* user)
 
 			break;
 		}
-		case RcvMsgFlag::LOGOUT:
-			// ...
+		case RcvMsgFlag::LOGOUT_CLIENT: {
+			int temp;
+			int shutdownFlag = this->receiveData(user, (char*)&temp, sizeof(temp));
+			if (shutdownFlag == 0) {
+				this->sendALogoutReply(user);
+			}
+
 			break;
+		}
+		case RcvMsgFlag::LOGOUT_SERVER: {
+			int temp;
+			int shutdownFlag = this->receiveData(user, (char*)&temp, sizeof(temp));
+			if (shutdownFlag == 0) {
+				this->receiveALogoutReply();
+				exitFlag = true;
+			}
+
+			break;
+		}
 		default:
 			break;
 		}
 
 		delete[] msg;
 		msg = nullptr;
+
+		if (exitFlag) {
+			break;
+		}
 	}
 }
 
@@ -622,7 +649,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	this->MutexUpload.unlock();
 }
 
-void Program::receiveALogoutRequestFromClient(User* user)
+void Program::sendALogoutReply(User* user)
 {
 	// ... user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
 
@@ -635,7 +662,7 @@ void Program::receiveALogoutRequestFromClient(User* user)
 	}
 
 	// Send a notification to all Online Clients (broadcast).
-	SendMsgFlag flag = SendMsgFlag::LOGOUT;
+	SendMsgFlag flag = SendMsgFlag::CLIENT_LOGOUT_NOTIF;
 	string msg = user->Username;
 	uint64_t msgLen = msg.length();
 
@@ -643,14 +670,21 @@ void Program::receiveALogoutRequestFromClient(User* user)
 		this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
 	}
 
-	// Reply: Server close send.
+	// Send flag
+	flag = SendMsgFlag::LOGOUT_CLIENT;
+	msg = "a";
+	msgLen = msg.length();
+
+	this->sendMsg(user, flag, msgLen, msg.c_str());
+
+	// Reply: user close send.
 	int iResult = shutdown(user->AcceptSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR) {
 		this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
 		this->printLastError();
 	}
 
-	// Server close rcv.
+	// user close rcv.
 	closesocket(user->AcceptSocket);
 
 	// Log
@@ -660,13 +694,42 @@ void Program::receiveALogoutRequestFromClient(User* user)
 	// ... Update GUI here: update ONL/OFF list.
 	updateClient(user->Username, false);
 
-
 	// ... user->MutexSending.unlock();
+}
+
+void Program::sendALogoutRequest()
+{
+	SendMsgFlag flag = SendMsgFlag::LOGOUT_SERVER;
+	std::string msg = "a";
+	uint64_t msgLen = msg.length();
+
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+		
+		// Server closes send.
+		int iResult = shutdown(this->OnlineUserList[i]->AcceptSocket, SD_SEND);
+		if (iResult == SOCKET_ERROR) {
+			this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
+			this->printLastError();
+		}
+	}
+
+	std::string log = "Request all Online Clients to logout.";
+	this->printLog(log, log);
+}
+
+void Program::receiveALogoutReply()
+{
+	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		closesocket(this->OnlineUserList[i]->AcceptSocket);
+	}
+
+	this->OnlineUserList.resize(0);
 }
 
 void Program::printLastError()
 {
-	cout << this->LastError << "\n";
+	//cout << this->LastError << "\n";
 }
 
 unsigned long Program::fileSizeBytes(string filename) {
@@ -745,9 +808,9 @@ void Program::navigateStatus() {
 
 			// ============= ENTER =============
 			if (GetKeyState(VK_RETURN) & 0x8000) {
-				if (selected == SELECTED::YES) {
-					// SOCKET DISCONECT
-
+				if (selected == SELECTED::YES) {	// Logout here
+					this->sendALogoutRequest();
+					while (this->OnlineUserList.size() != 0);
 					esc = true;
 				}
 				else {

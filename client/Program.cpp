@@ -14,6 +14,7 @@ Program::Program()
 	this->initDataBaseDirectory();
 	this->initFileList();
 	this->initWinsock();
+	
 	this->ExitFlag = false;
 
 	/* LOG */
@@ -123,17 +124,17 @@ void Program::receiveMsg()
 {
 	/* Message structure: FLAG (uint8_t) | MSGLEN (uint64_t) | MSG (char*) */
 
-	int shutdownFlag;
+	int crashFlag;
 
 	RcvMsgFlag flag;
 	uint64_t msgLen;
 	char* msg;
 
 	while (true) {
-		shutdownFlag = this->receiveData((char*)&flag, sizeof(flag));
-		if (shutdownFlag == 0) {	// Check if the Server shutdowns
-			closesocket(this->UserInfo.ConnectSocket);	// Client close rcv.
-			this->ExitFlag = true;	// Unblock at the navigateMode function.
+		crashFlag = this->receiveData((char*)&flag, sizeof(flag));
+		if (crashFlag == -1) {
+			// ...
+
 			break;
 		}
 
@@ -211,8 +212,11 @@ void Program::receiveMsg()
 		}
 		case RcvMsgFlag::UPLOAD_FILE_FAIL: {
 			// Log
-			string content = "Upload failed. This file's name exists.";
-			printLog(content, content);
+			std::string gui1 = "Upload file failed.";
+			std::string gui2 = "This file's name already exists.";
+			std::string log = gui1 + " " + gui2;
+			printLog(gui1, gui2, log);
+      
 			break;
 		}
 		case RcvMsgFlag::UPLOAD_FILE_SUCCESS: {
@@ -239,10 +243,31 @@ void Program::receiveMsg()
 			this->updateSharedFileList(newFileContent);
 			break;
 		}
-		case RcvMsgFlag::LOGOUT: {
+		case RcvMsgFlag::LOGOUT_CLIENT: {
+			int temp;
+			int shutdownCheck = receiveData((char*)&temp, sizeof(temp));
+			if (shutdownCheck == 0) {
+				this->receiveALogoutReply();
+				this->ExitFlag = true;
+			}
+
+			break;
+		}
+		case RcvMsgFlag::LOGOUT_SERVER: {
+			int temp;
+			int shutdownCheck = receiveData((char*)&temp, sizeof(temp));
+			if (shutdownCheck == 0) {
+				this->sendALogoutReply();
+				this->ExitFlag = true;
+			}
+
+			break;
+		}
+		case RcvMsgFlag::CLIENT_LOGOUT_NOTIF: {
 			std::string username(msg);
 			std::string log = "<" + username + "> logged out.";
 			this->printLog(log, log);
+
 			break;
 		}
 		default:
@@ -251,6 +276,10 @@ void Program::receiveMsg()
 
 		delete[] msg;
 		msg = nullptr;
+
+		if (this->ExitFlag) {
+			break;
+		}
 	}
 }
 
@@ -558,6 +587,12 @@ void Program::initSharedFileList(std::string const& initFileContent) {
 
 void Program::sendALogoutRequest()
 {
+	SendMsgFlag flag = SendMsgFlag::LOGOUT_CLIENT;
+	std::string msg = "a";
+	uint64_t msgLen = msg.length();
+
+	this->sendMsg(flag, msg.c_str(), msgLen);
+
 	// Client closes send.
 	int iResult = shutdown(this->UserInfo.ConnectSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR) {
@@ -567,6 +602,35 @@ void Program::sendALogoutRequest()
 
 	// Log
 	std::string log = "Request the Server to logout.";
+	this->printLog(log, log);
+}
+
+void Program::receiveALogoutReply()
+{
+	// Client close rcv.
+	closesocket(this->UserInfo.ConnectSocket);
+}
+
+void Program::sendALogoutReply()
+{
+	SendMsgFlag flag = SendMsgFlag::LOGOUT_SERVER;
+	std::string msg = "a";
+	uint64_t msgLen = msg.length();
+
+	this->sendMsg(flag, msg.c_str(), msgLen);
+
+	// Client close send.
+	int iResult = shutdown(this->UserInfo.ConnectSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
+		this->printLastError();
+	}
+
+	// Client close rcv.
+	closesocket(this->UserInfo.ConnectSocket);
+
+	// Log
+	std::string log = "<Server> logged out.";
 	this->printLog(log, log);
 }
 
@@ -585,7 +649,7 @@ std::string Program::getFileNameFromPath(std::string const& path)
 
 void Program::printLastError()
 {
-	cout << this->LastError << "\n";
+	//cout << this->LastError << "\n";
 }
 
 
@@ -732,8 +796,7 @@ void Program::navigateMode() {
 				if (selected == SELECTED::YES) {	// Logout here
 					esc = true;
 					this->sendALogoutRequest();
-					
-					while (!this->ExitFlag);
+					//while (!this->ExitFlag);
 				}
 
 				if (selected == SELECTED::NO) {
@@ -756,7 +819,7 @@ void Program::navigateMode() {
 			}
 		}
 
-		if (esc) break;
+		if (esc || this->ExitFlag) break;
 	}
 }
 
