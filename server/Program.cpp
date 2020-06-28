@@ -529,37 +529,37 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		// Send file's size
 		this->sendData(user, (char*)&fileSize, sizeof(fileSize));
 
-		// Log
-		string gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
-		string log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(string("Start sending to <") + user->Username + string(">: "), gui, log);
+		//// Log
+		//string gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		//string log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
+		//printLog(string("Start sending to <") + user->Username + string(">: "), gui, log);
 
-		ShowConsoleCursor(false);
+		//ShowConsoleCursor(false);
 
-		line_pb = line_3;
-		line_3++;
+		//line_pb = line_3;
+		//line_3++;
 
-		printProgressBar(0);
+		//printProgressBar(0);
 
 		// Send file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			fin.read(buffer, this->BUFFER_LEN);
 			this->sendData(user, buffer, this->BUFFER_LEN);
 
-			// Progress
-			if (i % 500 == 0)
-				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
+			//// Progress
+			//if (i % 500 == 0)
+			//	printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 		fin.read(buffer, fileSize % this->BUFFER_LEN);
 		this->sendData(user, buffer, fileSize % this->BUFFER_LEN);
 
-		printProgressBar(1); // Complete 100%
+		//printProgressBar(1); // Complete 100%
 
-		ShowConsoleCursor(true);
+		//ShowConsoleCursor(true);
 
 		// Log
-		gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
-		log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string gui = shortenFileName(FileNameList[stoi(indexFile_str)]) + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string log = FileNameList[stoi(indexFile_str)] + string(" (") + shortenFileSize(fileSize) + string(").");
 		printLog(string("Sent <") + user->Username + string("> succeess: "), gui, log);
 
 		// Release resources
@@ -626,38 +626,38 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		// Receive file's size.
 		this->receiveData(user, (char*)&fileSize, sizeof(fileSize));
 
-		// Log
-		string gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		string log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
-		printLog(string("Start recieving from <") + user->Username + string(">: "), gui, log);
+		//// Log
+		//string gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		//string log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		//printLog(string("Start recieving from <") + user->Username + string(">: "), gui, log);
 
-		ShowConsoleCursor(false);
+		//ShowConsoleCursor(false);
 
-		line_pb = line_3;
-		line_3++;
+		//line_pb = line_3;
+		//line_3++;
 
-		printProgressBar(0);
+		//printProgressBar(0);
 
 		// Receive file's data
 		for (uint64_t i = 0; i < fileSize / this->BUFFER_LEN; ++i) {
 			this->receiveData(user, buffer, this->BUFFER_LEN);
 			fout.write(buffer, this->BUFFER_LEN);
 
-			// Progress
-			if (i % 500 == 0)
-				printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
+			//// Progress
+			//if (i % 500 == 0)
+			//	printProgressBar((i + 1) * this->BUFFER_LEN * 1.0 / fileSize);
 		}
 
 		this->receiveData(user, buffer, fileSize % this->BUFFER_LEN);
 		fout.write(buffer, fileSize % this->BUFFER_LEN);
 
-		printProgressBar(1); // Complete 100%
+		//printProgressBar(1); // Complete 100%
 
-		ShowConsoleCursor(true);
+		//ShowConsoleCursor(true);
 
 		// Log
-		gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
-		log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string gui = shortenFileName(uploadFileName) + string(" (") + shortenFileSize(fileSize) + string(").");
+		std::string log = uploadFileName + string(" (") + shortenFileSize(fileSize) + string(").");
 		printLog(string("Recieved from <") + user->Username + string("> succeess: "), gui, log);
 
 		// Release resources
