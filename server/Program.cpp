@@ -171,7 +171,7 @@ void Program::acceptConnections()
 		if (acceptSocket == INVALID_SOCKET) {
 			this->LastError = "accept() failed: " + std::to_string(WSAGetLastError());
 			this->printLastError();
-			continue;
+			return;
 		}
 
 		User* user = new User(acceptSocket);
@@ -514,7 +514,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 	std::ifstream fin(filePath, std::ios_base::binary);
 
 	if (fin.is_open()) {
-		this->MutexPrint.lock();
+		//this->MutexPrint.lock();
 
 		int iResult;
 
@@ -566,7 +566,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		delete[] buffer;
 		fin.close();
 
-		this->MutexPrint.unlock();
+		//this->MutexPrint.unlock();
 	}
 	else {
 		this->LastError = "Failed to open file " + filePath;
@@ -617,7 +617,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	uint64_t fileSize = 0;
 
 	if (fout.is_open()) {
-		this->MutexPrint.lock();
+		//this->MutexPrint.lock();
 
 		int iResult;
 
@@ -664,7 +664,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		delete[] buffer;
 		fout.close();
 
-		this->MutexPrint.unlock();
+		//this->MutexPrint.unlock();
 	}
 	else {
 		this->LastError = "Unable to create file " + uploadFileName;
