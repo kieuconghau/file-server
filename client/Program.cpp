@@ -98,16 +98,16 @@ bool Program::initConnectSocket()
 
 		iResult = connect(this->UserInfo.ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 
-		// Log
-		string gui_2 = string("Connection success.");
-		string gui_1 = string("Server IP: ") + string(this->ServerIP);
-		printLog(gui_1, gui_2, gui_2);
-
 		if (iResult == SOCKET_ERROR) {
 			closesocket(this->UserInfo.ConnectSocket);
 			this->UserInfo.ConnectSocket = INVALID_SOCKET;
 			continue;
 		}
+
+		// Log
+		string gui_2 = string("Connection success.");
+		string gui_1 = string("Server IP: ") + string(this->ServerIP);
+		printLog(gui_1, gui_2, gui_2);
 
 		break;
 	}
@@ -115,6 +115,14 @@ bool Program::initConnectSocket()
 	if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 		this->LastError = "Error at socket(): " + std::to_string(WSAGetLastError());
 		this->printLastError();
+		freeaddrinfo(result);
+
+		// Log
+		string gui_2 = string("Connection fail.");
+		string gui_1 = string("Server IP: ") + string(this->ServerIP);
+		printLog(gui_1, gui_2, gui_2);
+
+		return false;
 	}
 
 	freeaddrinfo(result);
