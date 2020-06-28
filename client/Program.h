@@ -3,6 +3,7 @@
 #include "Console.h"
 #include "User.h"
 #include "File.h"
+#include <mutex>
 
 enum class SELECTED {
 	REGISTER = 0,
@@ -114,16 +115,17 @@ private:
 	// Init File List
 	void initSharedFileList(std::string const& initFileContent);
 
-	// Logout
+	// Logout - Client
 	void sendALogoutRequest();
 	void receiveALogoutReply();
 
+	// Logout - Server
 	void sendALogoutReply();
 
 	// Handle error
 	void printLastError();
 
-	// ...
+	// GUI
 	void homeScreen();
 
 	void printTitle();
@@ -135,7 +137,7 @@ private:
 	void printLog(string gui_1, string gui_2, string log);
 
 	/* ==== Client Register/Login ==== */
-	void buttonClient();
+	void buttonClient();	// no mutex
 	void printIP();
 	void printClient();
 	bool navigateClient();
@@ -150,6 +152,6 @@ private:
 	bool dirExists(const std::string& dirName_in);
 
 	void printStatus();
-	void printProgressBar(float percentage);
+	void printProgressBar(float percentage);	// no mutex
 };
 

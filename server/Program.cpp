@@ -479,10 +479,14 @@ void Program::verifyUserLogin(User* user) {
 	// Send to every online users, except the newly-logged in user,
 	// who's at the back of the OnlineUserList vector
 	for (size_t i = 0; i < this->OnlineUserList.size() - 1; i++) {
+		this->OnlineUserList[i]->MutexSending.lock();
+
 		sendMsg(OnlineUserList[i], SendMsgFlag::NEW_USER_LOGIN, 1, "\0");
 
 		sendData(OnlineUserList[i], (char*)&usernameLen, sizeof(usernameLen));
 		sendData(OnlineUserList[i], username, usernameLen + 1);
+
+		this->OnlineUserList[i]->MutexSending.unlock();
 	}
 
 	// Log
@@ -543,6 +547,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		printLog(string("Start sending to <") + user->Username + string(">: "), gui, log);
 
 		ShowConsoleCursor(false);
+
 		line_pb = line_3;
 		line_3++;
 
@@ -577,6 +582,7 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		this->LastError = "Failed to open file " + filePath;
 		this->printLastError();
 	}
+
 	user->MutexSending.unlock();
 }
 
@@ -634,6 +640,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		printLog(string("Start recieving from <") + user->Username + string(">: "), gui, log);
 
 		ShowConsoleCursor(false);
+
 		line_pb = line_3;
 		line_3++;
 
@@ -682,7 +689,11 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 
 	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
 		if (user != this->OnlineUserList[i]) {
+			this->OnlineUserList[i]->MutexSending.lock();
+
 			this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+
+			this->OnlineUserList[i]->MutexSending.unlock();
 		}
 	}
 
@@ -707,7 +718,11 @@ void Program::sendALogoutReply(User* user)
 	uint64_t msgLen = msg.length();
 
 	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		this->OnlineUserList[i]->MutexSending.lock();
+
 		this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
+
+		this->OnlineUserList[i]->MutexSending.unlock();
 	}
 
 	// Send flag
@@ -744,6 +759,8 @@ void Program::sendALogoutRequest()
 	uint64_t msgLen = msg.length();
 
 	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
+		this->OnlineUserList[i]->MutexSending.lock();
+
 		this->sendMsg(this->OnlineUserList[i], flag, msgLen, msg.c_str());
 		
 		// Server closes send.
@@ -752,6 +769,8 @@ void Program::sendALogoutRequest()
 			this->LastError = "shutdown() failed: " + std::to_string(WSAGetLastError());
 			this->printLastError();
 		}
+
+		this->OnlineUserList[i]->MutexSending.unlock();
 	}
 
 	std::string log = "Request all Online Clients to logout.";

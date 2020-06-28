@@ -765,7 +765,7 @@ void Program::navigateMode() {
 				if (selected == SELECTED::UPLOAD) {
 					std::string uploadedFilePath = this->enterPath();
 
-					if (uploadedFilePath.front() == '"' && uploadedFilePath.back() == '"') {
+					if (uploadedFilePath.length() > 2 && uploadedFilePath.front() == '"' && uploadedFilePath.back() == '"') {
 						uploadedFilePath.erase(uploadedFilePath.begin());
 						uploadedFilePath.erase(uploadedFilePath.begin() + uploadedFilePath.length() - 1);
 					}
@@ -849,6 +849,7 @@ string Program::enterPath() {
 	getline(cin, path);
 
 	gotoXY(41, 0); printSpace(69);
+
 	return path;
 }
 
@@ -861,7 +862,6 @@ void Program::printTitle() {
 	
 	setColor(COLOR::BLACK, COLOR::LIGHT_GRAY);
 	printSpace(20); cout << "History Log"; printSpace(19);
-
 
 	setColor(COLOR::WHITE, COLOR::BLACK);
 }
@@ -903,7 +903,7 @@ void Program::printLog(string gui, string log) {
 	f.close();
 }
 
-void Program::printLog(string gui_1, string gui_2, string log) {
+void Program::printLog(string gui_1, string gui_2, string log) {	
 	fstream f(DATABASE_PATH + "\\" + LOG_FILE, std::fstream::out | std::fstream::app);
 	time_t now = time(0);
 	tm* ltm = localtime(&now);
@@ -976,7 +976,6 @@ void Program::printClient() {
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);
 	gotoXY(1, 12); cout << "Username:";
 	gotoXY(1, 13); cout << "Password:";
-
 }
 
 bool Program::navigateClient() {
@@ -1042,6 +1041,7 @@ bool Program::inputIP() {
 	if (this->initConnectSocket()) {
 		std::thread rcvMsgThread(&Program::receiveMsg, this);
 		rcvMsgThread.detach();
+
 		return true;
 	}
 

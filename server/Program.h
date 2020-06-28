@@ -111,16 +111,17 @@ private:
 	// Upload File
 	void receiveAFileFromClient(std::string const& uploadFileName, User* user);
 
-	// Logout
-	void sendALogoutReply(User* user);	// user logout
+	// Logout - Client
+	void sendALogoutReply(User* user);
 
-	void sendALogoutRequest();			// Server logout
-	void receiveALogoutReply();			// Server logout
+	// Logout - Server
+	void sendALogoutRequest();
+	void receiveALogoutReply();
 
 	// Handle error
 	void printLastError();
 
-	// ...
+	// GUI
 	unsigned long fileSizeBytes(string filename);
 	string toStringFileSize(string filename);
 	string shortenFileName(string filename);
@@ -137,7 +138,7 @@ private:
 
 	void printClient(string user, bool login);
 	void updateClient(string Username, bool login);
-	void printProgressBar(float percentage);
+	void printProgressBar(float percentage);		// no mutex
 
 	void updateSharedFilesNamesFile(string filename);
 
