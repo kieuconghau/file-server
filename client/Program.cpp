@@ -172,8 +172,6 @@ void Program::receiveMsg()
 			this->printClient();
 			this->navigateClient();
 
-			// disconnect to server...
-
 			break;
 		}
 		case RcvMsgFlag::REGISTER_SUCCESS: {
@@ -188,7 +186,6 @@ void Program::receiveMsg()
 			this->loginClient();
 			this->tryLogin();
 
-			// disconnect to server...
 			break;
 		}
 		case RcvMsgFlag::LOGIN_FAIL_USERNAME: {
@@ -200,7 +197,6 @@ void Program::receiveMsg()
 			this->printClient();
 			this->navigateClient();
 
-			// disconnect to server...
 			break;
 		}
 		case RcvMsgFlag::LOGIN_FAIL_PASSWORD: {
@@ -212,7 +208,18 @@ void Program::receiveMsg()
 			this->printClient();
 			this->navigateClient();
 
-			// disconnect to server...
+			break;
+		}
+		case RcvMsgFlag::LOGIN_FAIL_ONLINE: {
+			// Log
+			string gui_1 = "Login failed.";
+			string gui_2 = "This account is currently online.";
+			printLog(gui_1, gui_2, gui_2);
+
+			// Login_Fail -> selected Login/Register
+			this->printClient();
+			this->navigateClient();
+
 			break;
 		}
 		case RcvMsgFlag::LOGIN_SUCCESS: {
@@ -224,7 +231,6 @@ void Program::receiveMsg()
 			selected = SELECTED::UPLOAD;
 			this->printStatus();
 
-			// Receive the list of shared files from server...
 			break;
 		}
 		case RcvMsgFlag::UPLOAD_FILE_FAIL: {
