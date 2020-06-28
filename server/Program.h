@@ -53,6 +53,7 @@ private:
 	LPCSTR const DEFAULT_PORT = "27015";
 
 	std::mutex MutexUpload;
+	std::mutex MutexPrint;
 
 	std::vector<User*> UserList;
 	std::vector<User*> OnlineUserList;

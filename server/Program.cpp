@@ -514,6 +514,8 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 	std::ifstream fin(filePath, std::ios_base::binary);
 
 	if (fin.is_open()) {
+		this->MutexPrint.lock();
+
 		int iResult;
 
 		uint64_t fileSize;
@@ -563,6 +565,8 @@ void Program::sendAFileToClient(std::string const& indexFile_str, User* user)
 		// Release resources
 		delete[] buffer;
 		fin.close();
+
+		this->MutexPrint.unlock();
 	}
 	else {
 		this->LastError = "Failed to open file " + filePath;
@@ -613,6 +617,8 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 	uint64_t fileSize = 0;
 
 	if (fout.is_open()) {
+		this->MutexPrint.lock();
+
 		int iResult;
 
 		char* buffer = new char[this->BUFFER_LEN];
@@ -657,6 +663,8 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 		// Release resources
 		delete[] buffer;
 		fout.close();
+
+		this->MutexPrint.unlock();
 	}
 	else {
 		this->LastError = "Unable to create file " + uploadFileName;
