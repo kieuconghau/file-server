@@ -295,6 +295,7 @@ void Program::receiveMsg(User* user)
 			int shutdownFlag = this->receiveData(user, (char*)&temp, sizeof(temp));
 			if (shutdownFlag == 0) {
 				this->sendALogoutReply(user);
+				exitFlag = true;
 			}
 
 			break;
