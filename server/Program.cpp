@@ -34,11 +34,6 @@ Program::~Program()
 		this->UserList[i] = nullptr;
 	}
 
-	// Realase all file.
-	for (int i = 0; i < FileNameList.size(); i++) {		// ???
-		delete& this->FileNameList[i];
-	}
-
 	// When the client application is completed using the Windows Sockets DLL, the WSACleanup function is called to release resources.
 	WSACleanup();
 }
@@ -93,18 +88,9 @@ void Program::initFileNameList() {
 	if (!f.is_open())
 		return;
 
-	while (true) {
-		string str;
-
-		getline(f, str, '\0');
-
-		if (f.eof()) {
-			break;
-		}
-
-		string* filename = new string;
-		*filename = str;
-		this->FileNameList.push_back(*filename);
+	string str;
+	while (getline(f, str, '\0')) {
+		this->FileNameList.push_back(str);
 	}
 
 	f.close();
