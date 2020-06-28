@@ -83,7 +83,7 @@ private:
 
 	// Set up Client
 	void initWinsock();
-	void initConnectSocket();
+	bool initConnectSocket();
 	
 	// Transfer
 	void receiveMsg();
@@ -138,8 +138,8 @@ private:
 	void buttonClient();
 	void printIP();
 	void printClient();
-	void navigateClient();
-	void inputIP();
+	bool navigateClient();
+	bool inputIP();
 	void loginClient();
 	/* =============================== */
 

@@ -59,7 +59,7 @@ void Program::initWinsock()
 	}
 }
 
-void Program::initConnectSocket()
+bool Program::initConnectSocket()
 {
 	struct addrinfo* result = nullptr;	// A pointer to a linked list of one or more addrinfo structures that contains response information about the host.
 	struct addrinfo hints;
@@ -82,7 +82,7 @@ void Program::initConnectSocket()
 		string gui_1 = string("Server IP: ") + string(this->ServerIP);
 		printLog(gui_1, gui_2, gui_2);
 
-		return;
+		return false;
 	}
 
 	this->UserInfo.ConnectSocket = INVALID_SOCKET;
@@ -93,7 +93,7 @@ void Program::initConnectSocket()
 		if (this->UserInfo.ConnectSocket == INVALID_SOCKET) {
 			this->LastError = "socket() failed with error: " + std::to_string(WSAGetLastError());
 			this->printLastError();
-			return;
+			return false;
 		}
 
 		iResult = connect(this->UserInfo.ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
@@ -118,6 +118,8 @@ void Program::initConnectSocket()
 	}
 
 	freeaddrinfo(result);
+
+	return true;
 }
 
 void Program::receiveMsg()
@@ -661,11 +663,12 @@ void Program::printLastError()
 
 
 void Program::homeScreen() {
-	this->printTitle();
-	this->printMode();
-	this->printIP();
-	this->printClient();
-	this->navigateClient();
+	do {
+		this->printTitle();
+		this->printMode();
+		this->printIP();
+		this->printClient();
+	} while (!this->navigateClient());
 
 	while (selected != SELECTED::UPLOAD);
 
@@ -968,7 +971,7 @@ void Program::printClient() {
 
 }
 
-void Program::navigateClient() {
+bool Program::navigateClient() {
 	while (true) {
 
 		if (_kbhit()) {
@@ -990,7 +993,10 @@ void Program::navigateClient() {
 			// ============= ENTER =============
 			if (GetKeyState(VK_RETURN) & 0x8000) {
 				if (this->ServerIP == NULL || this->ServerIP[0] == 0) {
-					this->inputIP(); // make sure ip right 
+					if (!this->inputIP()) { // make sure ip right
+						this->ServerIP = NULL;
+						return false;
+					}
 				}
 				
 				if (selected == SELECTED::REGISTER) {
@@ -1010,18 +1016,24 @@ void Program::navigateClient() {
 		}
 
 	}
+
+	return true;
 }
 
-void Program::inputIP() {
+bool Program::inputIP() {
 	std::string input;
 
 	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
 	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);	this->ServerIP = input.c_str();
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
 
-	this->initConnectSocket();
-	std::thread rcvMsgThread(&Program::receiveMsg, this);
-	rcvMsgThread.detach();
+	if (this->initConnectSocket()) {
+		std::thread rcvMsgThread(&Program::receiveMsg, this);
+		rcvMsgThread.detach();
+		return true;
+	}
+
+	return false;
 }
 
 void Program::loginClient() {
