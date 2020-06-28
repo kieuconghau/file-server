@@ -213,12 +213,20 @@ void Program::receiveMsg(User* user)
 		if (crashFlag == SOCKET_ERROR) {
 			// ... user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
 
+			bool foundUser = false;
+
 			// Discard 'user' from the OnlineUserList.
 			for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
 				if (user == this->OnlineUserList[i]) {
+					foundUser = true;
 					this->OnlineUserList.erase(this->OnlineUserList.begin() + i);
 					break;
 				}
+			}
+
+			if (!foundUser) {
+				// ... user->MutexSending.unlock();
+				break;
 			}
 
 			// Send a notification to all Online Clients (broadcast).
