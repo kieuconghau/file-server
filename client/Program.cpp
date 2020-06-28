@@ -1023,9 +1023,13 @@ bool Program::navigateClient() {
 bool Program::inputIP() {
 	std::string input;
 
-	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);	this->ServerIP = input.c_str();
-	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
+	do {
+		setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 11); cout << "ServerIP: ";
+		setColor(COLOR::WHITE, COLOR::BLACK);					  getline(cin, input);
+		setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 11); cout << "ServerIP: ";
+	} while (input == "");
+
+	this->ServerIP = input.c_str();
 
 	if (this->initConnectSocket()) {
 		std::thread rcvMsgThread(&Program::receiveMsg, this);
