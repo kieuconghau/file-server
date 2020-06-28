@@ -1055,9 +1055,11 @@ void Program::loginClient() {
 		setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 12); cout << "Username: ";
 	} while (this->UserInfo.Username == "");
 
-	setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 13); cout << "Password: ";
-	setColor(COLOR::WHITE, COLOR::BLACK);	                  UserInfo.Password = hidePassword();
-	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 13); cout << "Password: ";
+	do {
+		setColor(COLOR::LIGHT_CYAN, COLOR::BLACK); gotoXY(1, 13); cout << "Password: ";
+		setColor(COLOR::WHITE, COLOR::BLACK);	                  UserInfo.Password = hidePassword();
+		setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(1, 13); cout << "Password: ";
+	} while (this->UserInfo.Password == "");
 
 	setColor(COLOR::DARK_GRAY, COLOR::BLACK);  gotoXY(0, 14); cout << "'============================'";
 }
