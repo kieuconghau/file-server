@@ -233,12 +233,14 @@ void Program::receiveMsg(User* user)
 			// user close rcv.
 			closesocket(user->AcceptSocket);
 
-			// Log
-			string content = "<" + user->Username + "> logged out.";
-			printLog(content, content);
+			if (user->Username != "") {
+				// Log
+				string content = "<" + user->Username + "> logged out.";
+				printLog(content, content);
 
-			// ... Update GUI here: update ONL/OFF list.
-			updateClient(user->Username, false);
+				// ... Update GUI here: update ONL/OFF list.
+				updateClient(user->Username, false);
+			}
 
 			// ... user->MutexSending.unlock();
 
