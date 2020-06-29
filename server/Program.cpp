@@ -211,6 +211,11 @@ void Program::receiveMsg(User* user)
 			}
 
 			if (!foundUser) {
+				if (user != nullptr) {
+					delete user;
+				}
+				user = nullptr;
+
 				// ... user->MutexSending.unlock();
 				break;
 			}
@@ -430,6 +435,13 @@ void Program::verifyUserLogin(User* user) {
 	password = new char[passwordLen + 1];
 	receiveData(user, password, passwordLen + 1);
 
+	for (size_t i = 0; i < this->OnlineUserList.size(); i++) {
+		if (this->OnlineUserList[i]->Username.compare(string(username)) == 0) {
+			sendMsg(user, SendMsgFlag::LOGIN_FAIL_ONLINE, 1, "\0");
+			return;
+		}
+	}
+
 	int pos = -1;
 	for (size_t i = 0; i < this->UserList.size(); i++) {
 		if (this->UserList[i]->Username.compare(string(username)) == 0) {
@@ -438,6 +450,7 @@ void Program::verifyUserLogin(User* user) {
 			if (this->UserList[i]->Password.compare(string(password)) == 0) {
 				user->Password = string(password);
 			}
+			break;
 		}
 	}
 
