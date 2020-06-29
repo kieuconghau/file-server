@@ -211,6 +211,11 @@ void Program::receiveMsg(User* user)
 			}
 
 			if (!foundUser) {
+				if (user != nullptr) {
+					delete user;
+				}
+				user = nullptr;
+
 				// ... user->MutexSending.unlock();
 				break;
 			}
