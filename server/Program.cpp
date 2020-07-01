@@ -285,27 +285,20 @@ void Program::receiveMsg(User* user)
 			printLog(gui_1, gui_2, gui_2);
 
 			// Forwarding
-			this->sendAFileToClient(indexFile_str, user);
+			std::thread sendAFileToClientThread(&Program::sendAFileToClient, this, indexFile_str, user);
+			sendAFileToClientThread.detach();
 
 			break;
 		}
 		case RcvMsgFlag::LOGOUT_CLIENT: {
-			int temp;
-			int shutdownFlag = this->receiveData(user, (char*)&temp, sizeof(temp));
-			if (shutdownFlag == 0) {
-				this->sendALogoutReply(user);
-				exitFlag = true;
-			}
+			this->sendALogoutReply(user);
+			exitFlag = true;
 
 			break;
 		}
 		case RcvMsgFlag::LOGOUT_SERVER: {
-			int temp;
-			int shutdownFlag = this->receiveData(user, (char*)&temp, sizeof(temp));
-			if (shutdownFlag == 0) {
-				this->receiveALogoutReply();
-				exitFlag = true;
-			}
+			this->receiveALogoutReply();
+			exitFlag = true;
 
 			break;
 		}
@@ -709,7 +702,7 @@ void Program::receiveAFileFromClient(std::string const& uploadFileName, User* us
 
 void Program::sendALogoutReply(User* user)
 {
-	// ... user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
+	user->MutexSending.lock();	// waiting for the Server sending all the remaining data.
 
 	// Discard 'user' from the OnlineUserList.
 	for (size_t i = 0; i < this->OnlineUserList.size(); ++i) {
@@ -756,7 +749,7 @@ void Program::sendALogoutReply(User* user)
 	// ... Update GUI here: update ONL/OFF list.
 	updateClient(user->Username, false);
 
-	// ... user->MutexSending.unlock();
+	user->MutexSending.unlock();
 }
 
 void Program::sendALogoutRequest()
