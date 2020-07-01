@@ -820,7 +820,7 @@ void Program::navigateMode() {
 				if (selected == SELECTED::YES) {	// Logout here
 					esc = true;
 					this->sendALogoutRequest();
-					//while (!this->ExitFlag);
+					while (!this->ExitFlag);
 				}
 
 				if (selected == SELECTED::NO) {
